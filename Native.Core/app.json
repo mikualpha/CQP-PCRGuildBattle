@@ -1,0 +1,78 @@
+// 酷Q 的Json文件支持以 // 开头的注释。
+// 开发模式下，应用的 app.dll 及 app.json 文件须放在 dev/[appid]/ 目录下，应用 AppInfo 函数返回的内容须改为 appid
+// 如 appid=com.example.demo, 则dll及json文件需分别放在 dev/com.example.demo/app.dll、dev/com.example.demo/app.json
+// [重要] appid 规则见 https://cqp.im/v9/appid
+{
+  "ret": 1,
+  "apiver": 9,
+  "name": "PCR公会战伤害计算工具",
+  "version": "1.0.1",
+  "version_id": 2,
+  "author": "初音未来Alpha",
+  "description": "PCR公会战伤害计算工具",
+  "event": [
+    {
+      "id": 1,
+      "type": 21,
+      "name": "私聊消息处理",
+      "function": "_eventPrivateMsg",
+      "priority": 30000
+    },
+    {
+      "id": 2,
+      "type": 2,
+      "name": "群消息处理",
+      "function": "_eventGroupMsg",
+      "priority": 30000
+    },
+    {
+      "id": 3,
+      "type": 4,
+      "name": "讨论组消息处理",
+      "function": "_eventDiscussMsg",
+      "priority": 30000
+    },
+    {
+      "id": 1001,
+      "type": 1001,
+      "name": "酷Q启动事件",
+      "priority": 30000,
+      "function": "_eventStartup"
+    },
+    {
+      "id": 1002,
+      "type": 1002,
+      "name": "酷Q关闭事件",
+      "priority": 30000,
+      "function": "_eventExit"
+    },
+    {
+      "id": 1003,
+      "type": 1003,
+      "name": "应用已被启用",
+      "priority": 30000,
+      "function": "_eventEnable"
+    },
+    {
+      "id": 1004,
+      "type": 1004,
+      "name": "应用将被停用",
+      "priority": 30000,
+      "function": "_eventDisable"
+    }
+  ],
+  "menu": [ // 设置菜单（发布前请删除无用菜单，如果无需设置菜单请全部删除）
+
+  ],
+  "status": [ // 悬浮窗状态（见 com.example.status 样例）
+
+  ],
+  "auth": [ // 应用权限（发布前请删除无用权限）
+    //20,  //[敏感]取Cookies    getCookies / getCsrfToken
+    //30,  //接收语音           getRecord
+    101, //发送群消息         sendGroupMsg
+    106, //发送私聊消息       sendPrivateMsg
+    130, //取群成员信息       getGroupMemberInfo
+    160 //取群成员列表       getGroupMemberList
+  ]
+}
