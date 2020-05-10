@@ -56,12 +56,38 @@ class SQLiteManager
         }, "");
     }
 
-    public List<Damage> GetTodayDamages(long qq = 0)
+    public List<Damage> GetTodayDamages(long qq)
     {
-        List<Damage> temp = null;
-        if (qq == 0) temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE day = ?", GetDay());
-        else temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE day = ? AND user = ?", GetDay(), qq);
+        List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE day = ? AND user = ?", GetDay(), qq);
         return temp;
+    }
+
+    public List<Damage> GetTodayDamages()
+    {
+        List<Damage> temp = _connection.Query<Damage>("SELECT id, user, day, COUNT(troop) as troop, SUM(damage) as damage FROM Damage WHERE day = ? GROUP BY user", GetDay());
+        return temp;
+    }
+
+    public Dictionary<long, long> GetRecentDaysDamages(long qq, int day_size)
+    {
+        List<DayDamage> temp = _connection.Query<DayDamage>("SELECT user, day, SUM(damage) as total FROM Damage WHERE day >= ? AND user = ? GROUP BY day", GetDay() - day_size, qq);
+        Dictionary<long, long> output = new Dictionary<long, long>();
+        foreach (DayDamage day in temp)
+        {
+            output.Add(day.day, day.total);
+        }
+        return output;
+    }
+
+    public Dictionary<long, long> GetRecentDaysGuildTotalDamages(int day_size)
+    {
+        List<DayDamage> temp = _connection.Query<DayDamage>("SELECT user, day, SUM(damage) as total FROM Damage WHERE day >= ? GROUP BY day", GetDay() - day_size);
+        Dictionary<long, long> output = new Dictionary<long, long>();
+        foreach (DayDamage day in temp)
+        {
+            output.Add(day.day, day.total);
+        }
+        return output;
     }
 
     public long GetDamage(long qq, int troop)
@@ -92,14 +118,20 @@ class SQLiteManager
         return damage - temp[0].damage;
     }
 
-    public long GetTimeStamp()
+    public static long GetTimeStamp()
     {
         return (DateTime.Now.ToUniversalTime().Ticks - 621355968000000000) / 10000000;
     }
 
-    public long GetDay()
+    public static long GetDay()
     {
         return ((GetTimeStamp() / 3600) + 3) / 24;
+    }
+
+    public static string DayToDate(long day)
+    {
+        DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0);
+        return dateTime.AddDays(day).ToShortDateString();
     }
 
     private string ConvertIntDateTime(long d)
@@ -131,5 +163,12 @@ class SQLiteManager
         public int troop { get; set; }
         [NotNull]
         public long damage { get; set; }
+    }
+
+    public class DayDamage
+    {
+        public long user { get; set; }
+        public long day { get; set; }
+        public long total { get; set; }
     }
 }

@@ -256,6 +256,37 @@ public class Event_GroupMessage : IGroupMessage
             e.Handler = true;
             return;
         }
+        /*
+        if (e.Message.Text.StartsWith("查看总伤害 [CQ:at,qq=") && GuildBattle.GetInstance().isAdmin(e.FromQQ.Id))
+        {
+            long qq = GetOperateQQ(e.Message.Text);
+            e.CQApi.SendGroupMessage(e.FromGroup.Id, GetRecentDaysDamages(qq));
+            e.Handler = true;
+            return;
+        }
+
+        if (Regex.IsMatch(e.Message.Text, @"查看总伤害 (\d+)") && GuildBattle.GetInstance().isAdmin(e.FromQQ.Id))
+        {
+            Match match = Regex.Match(e.Message.Text, @"查看总伤害 (\d+)");
+            long qq = long.Parse(match.Groups[1].Value);
+            e.CQApi.SendGroupMessage(e.FromGroup.Id, GetRecentDaysDamages(qq));
+            e.Handler = true;
+            return;
+        }
+        */
+        if (e.Message.Text.Equals("查看总伤害"))
+        {
+            e.CQApi.SendGroupMessage(e.FromGroup.Id, GetRecentDaysDamages(e.FromQQ.Id));
+            e.Handler = true;
+            return;
+        }
+
+        if (e.Message.Text.Equals("查看公会总伤害") && GuildBattle.GetInstance().isAdmin(e.FromQQ.Id))
+        {
+            e.CQApi.SendGroupMessage(e.FromGroup.Id, GetRecentDaysGuildTotalDamages());
+            e.Handler = true;
+            return;
+        }
 
         if ((e.Message.Text.Equals("出刀统计") || e.Message.Text.Equals("出刀警察")) && GuildBattle.GetInstance().isAdmin(e.FromQQ.Id))
         {
@@ -271,6 +302,48 @@ public class Event_GroupMessage : IGroupMessage
         Match match = Regex.Match(input, exp);
         long qq = long.Parse(match.Groups[1].Value);
         return qq;
+    }
+
+    public string GetRecentDaysDamages(long qq)
+    {
+        Dictionary<long, long> dayDamages = SQLiteManager.GetInstance().GetRecentDaysDamages(qq, 10);
+        string output = "[" + GuildBattle.GetUserName(qq) + "] 近期对BOSS造成的伤害：";
+        if (dayDamages.Count == 0)
+        {
+            output += "\n无记录";
+            return output;
+        }
+
+        long allDamage = 0;
+        foreach (KeyValuePair<long, long> kvp in dayDamages)
+        {
+            output += "\n" + "[" + SQLiteManager.DayToDate(kvp.Key) + "]\t" + kvp.Value.ToString();
+            allDamage += kvp.Value;
+        }
+
+        output += "\n" + "[近期总伤害]\t" + allDamage.ToString();
+        return output;
+    }
+
+    public string GetRecentDaysGuildTotalDamages()
+    {
+        Dictionary<long, long> dayDamages = SQLiteManager.GetInstance().GetRecentDaysGuildTotalDamages(10);
+        string output = "本公会近期对BOSS造成的伤害：";
+        if (dayDamages.Count == 0)
+        {
+            output += "\n无记录";
+            return output;
+        }
+
+        long allDamage = 0;
+        foreach (KeyValuePair<long, long> kvp in dayDamages)
+        {
+            output += "\n" + "[" + SQLiteManager.DayToDate(kvp.Key) + "]\t" + kvp.Value.ToString();
+            allDamage += kvp.Value;
+        }
+
+        output += "\n" + "[近期总伤害]\t" + allDamage.ToString();
+        return output;
     }
 
     public string GetTodayDamage(long qq)
@@ -301,56 +374,31 @@ public class Event_GroupMessage : IGroupMessage
     {
         string output = "【今日出刀状况】";
 
-        List<SQLiteManager.Damage> temp = SQLiteManager.GetInstance().GetTodayDamages();
-        List<long> users = new List<long>();
-        List<int> troops = new List<int>();
-        List<long> damages = new List<long>();
+        List<SQLiteManager.Damage> damages = SQLiteManager.GetInstance().GetTodayDamages();
 
-        GroupMemberInfoCollection infos = e.CQApi.GetGroupMemberList(e.FromGroup);
-        foreach (GroupMemberInfo info in infos)
+        for (int i = 0; i < damages.Count; ++i)
         {
-            if (!info.Card.Contains("*")) continue;
-            users.Add(info.QQ.Id);
-            troops.Add(0);
-            damages.Add(0);
-        }
-
-        for (int i = 0; i < temp.Count; ++i)
-        {
-            if (users.Contains(temp[i].user))
+            for (int j = i + 1; j < damages.Count; ++j)
             {
-                int index = users.IndexOf(temp[i].user);
-                troops[index]++;
-                damages[index] += temp[i].damage;
-            }
-        }
-
-        for (int i = 0; i < users.Count; ++i)
-        {
-            for (int j = i + 1; j < users.Count; ++j)
-            {
-                if (troops[i] < troops[j])
+                if (damages[i].troop < damages[j].troop || (damages[i].troop == damages[j].troop && damages[i].damage < damages[j].damage))
                 {
-                    long swap = users[i];
-                    users[i] = users[j];
-                    users[j] = swap;
-
-                    swap = damages[i];
+                    SQLiteManager.Damage temp = damages[i];
                     damages[i] = damages[j];
-                    damages[j] = swap;
-
-                    swap = troops[i];
-                    troops[i] = troops[j];
-                    troops[j] = (int)swap;
+                    damages[j] = temp;
                 }
             }
         }
 
-        for (int i = 0; i < users.Count; ++i)
+        long totalTroop = 0;
+        long totalDamage = 0;
+        for (int i = 0; i < damages.Count; ++i)
         {
-            output += "\n" + GuildBattle.GetUserName(users[i]) + "\t\t" + troops[i].ToString() + "刀\t伤害: " + damages[i].ToString();
+            totalTroop += damages[i].troop;
+            totalDamage += damages[i].damage;
+            output += "\n" + GuildBattle.GetUserName(damages[i].user) + "\t\t" + damages[i].troop.ToString() + "刀\t伤害: " + damages[i].damage.ToString();
         }
-        output += "\n【已进行战斗次数(含补刀)】 " + temp.Count.ToString() + " 次";
+        output += "\n【已进行战斗次数(含补刀)】 " + totalTroop.ToString() + " 次";
+        output += "\n【本日总伤害】 " + totalDamage.ToString();
         return output;
     }
 }

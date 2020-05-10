@@ -25,6 +25,8 @@ class GuildBattle
         return ins;
     }
 
+    public static string GetSignChar() { return "*"; }
+
     #region 业务接口
     public void SetGroup(long group)
     {
@@ -165,7 +167,7 @@ class GuildBattle
     public static string GetUserName(long qq)
     {
         GroupMemberInfo info = ApiModel.CQApi.GetGroupMemberInfo(data.group, qq, true);
-        if (info.Card != null && info.Card != "") return info.Card.Replace("*", "") + "(" + qq.ToString() + ")";
+        if (info.Card != null && info.Card != "") return info.Card.Replace(GetSignChar(), "") + "(" + qq.ToString() + ")";
         return info.Nick + "(" + qq.ToString() + ")";
     }
 
