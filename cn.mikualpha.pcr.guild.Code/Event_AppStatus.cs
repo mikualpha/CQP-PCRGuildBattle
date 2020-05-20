@@ -1,5 +1,7 @@
 ﻿using Native.Sdk.Cqp.EventArgs;
 using Native.Sdk.Cqp.Interface;
+using System.IO;
+using System.Text.RegularExpressions;
 
 public class Event_AppStatus : IAppEnable, IAppDisable, ICQStartup
 {
@@ -17,7 +19,19 @@ public class Event_AppStatus : IAppEnable, IAppDisable, ICQStartup
         // 如非必要，不建议在这里加载窗口。（可以添加菜单，让用户手动打开窗口）
         ApiModel.setModel(e.CQApi, e.CQLog);
         SQLiteManager.GetInstance();
-        GuildBattle.GetInstance();
+
+        DirectoryInfo root = new DirectoryInfo(e.CQApi.AppDirectory);
+        FileInfo[] files = root.GetFiles();
+        string pattern = @"Data\-(\d+)\.ini";
+        foreach (FileInfo info in files)
+        {
+            if (Regex.IsMatch(info.Name, pattern))
+            {
+                Match temp = Regex.Match(info.Name, pattern);
+                GuildBattle.GetInstance(long.Parse(temp.Groups[1].Value));
+            }
+        }
+
     }
 
     /// <summary>

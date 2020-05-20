@@ -25,18 +25,19 @@ class SQLiteManager
         _connection.CreateTable<Damage>();
     }
 
-    public void AddLog(string _text)
+    public void AddLog(long _group, string _text)
     {
         _connection.Insert(new Log()
         {
             time = GetTimeStamp(),
+            group_number = _group,
             text = _text
         }, "");
     }
 
-    public List<string> GetLogs()
+    public List<string> GetLogs(long group)
     {
-        List<Log> temp = _connection.Query<Log>("SELECT * FROM Log ORDER BY id DESC LIMIT 7");
+        List<Log> temp = _connection.Query<Log>("SELECT * FROM Log WHERE group_number = ? ORDER BY id DESC LIMIT 7", group);
         List<string> output = new List<string>();
         for (int i = 0; i < temp.Count; ++i)
         {
@@ -45,10 +46,11 @@ class SQLiteManager
         return output;
     }
 
-    private void CreateDamage(long qq, int troop, long damage)
+    private void CreateDamage(long group, long qq, int troop, long damage)
     {
         _connection.Insert(new Damage()
         {
+            group_number = group,
             user = qq,
             troop = troop,
             damage = damage,
@@ -56,21 +58,21 @@ class SQLiteManager
         }, "");
     }
 
-    public List<Damage> GetTodayDamages(long qq)
+    public List<Damage> GetTodayDamages(long group, long qq)
     {
-        List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE day = ? AND user = ?", GetDay(), qq);
+        List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE day = ? AND user = ? AND group_number = ?", GetDay(), qq, group);
         return temp;
     }
 
-    public List<Damage> GetTodayDamages()
+    public List<Damage> GetTodayDamages(long group)
     {
-        List<Damage> temp = _connection.Query<Damage>("SELECT id, user, day, COUNT(troop) as troop, SUM(damage) as damage FROM Damage WHERE day = ? GROUP BY user", GetDay());
+        List<Damage> temp = _connection.Query<Damage>("SELECT id, user, day, COUNT(troop) as troop, SUM(damage) as damage FROM Damage WHERE day = ? AND group_number = ? GROUP BY user", GetDay(), group);
         return temp;
     }
 
-    public Dictionary<long, long> GetRecentDaysDamages(long qq, int day_size)
+    public Dictionary<long, long> GetRecentDaysDamages(long group, long qq, int day_size)
     {
-        List<DayDamage> temp = _connection.Query<DayDamage>("SELECT user, day, SUM(damage) as total FROM Damage WHERE day >= ? AND user = ? GROUP BY day", GetDay() - day_size, qq);
+        List<DayDamage> temp = _connection.Query<DayDamage>("SELECT day, SUM(damage) as total FROM Damage WHERE day >= ? AND user = ? AND group_number = ? GROUP BY day", GetDay() - day_size, qq, group);
         Dictionary<long, long> output = new Dictionary<long, long>();
         foreach (DayDamage day in temp)
         {
@@ -79,9 +81,9 @@ class SQLiteManager
         return output;
     }
 
-    public Dictionary<long, long> GetRecentDaysGuildTotalDamages(int day_size)
+    public Dictionary<long, long> GetRecentDaysGuildTotalDamages(long group, int day_size)
     {
-        List<DayDamage> temp = _connection.Query<DayDamage>("SELECT user, day, SUM(damage) as total FROM Damage WHERE day >= ? GROUP BY day", GetDay() - day_size);
+        List<DayDamage> temp = _connection.Query<DayDamage>("SELECT day, SUM(damage) as total FROM Damage WHERE day >= ? AND group_number = ? GROUP BY day", GetDay() - day_size, group);
         Dictionary<long, long> output = new Dictionary<long, long>();
         foreach (DayDamage day in temp)
         {
@@ -90,26 +92,27 @@ class SQLiteManager
         return output;
     }
 
-    public long GetDamage(long qq, int troop)
+    public long GetDamage(long group, long qq, int troop)
     {
-        List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE user = ? AND day = ? AND troop = ?", qq, GetDay(), troop);
+        List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE user = ? AND day = ? AND troop = ? AND group_number = ?", qq, GetDay(), troop, group);
         if (temp.Count == 0) return 0;
         return temp[0].damage;
     }
 
     //0为新增，其它数值为修改偏移值
-    public long AddDamage(long qq, int troop, long damage)
+    public long AddDamage(long group, long qq, int troop, long damage)
     {
-        List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE user = ? AND day = ? AND troop = ?", qq, GetDay(), troop);
+        List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE user = ? AND day = ? AND troop = ? AND group_number = ?", qq, GetDay(), troop, group);
         if (temp.Count == 0)
         {
-            CreateDamage(qq, troop, damage);
+            CreateDamage(group, qq, troop, damage);
             return 0;
         }
 
         _connection.Update(new Damage()
         {
             id = temp[0].id,
+            group_number = temp[0].group_number,
             user = temp[0].user,
             day = temp[0].day,
             troop = temp[0].troop,
@@ -148,6 +151,8 @@ class SQLiteManager
         public int id { get; set; }
         [NotNull]
         public long time { get; set; }
+        [NotNull]
+        public long group_number { get; set; }
         public string text { get; set; }
     }
 
@@ -155,6 +160,8 @@ class SQLiteManager
     {
         [PrimaryKey, AutoIncrement]
         public int id { get; set; }
+        [NotNull]
+        public long group_number { get; set; }
         [NotNull]
         public long user { get; set; }
         [NotNull]
@@ -170,5 +177,18 @@ class SQLiteManager
         public long user { get; set; }
         public long day { get; set; }
         public long total { get; set; }
+    }
+
+    public class DamageComparer : IEqualityComparer<Damage>
+    {
+        public static DamageComparer Default = new DamageComparer();
+        public bool Equals(Damage x, Damage y)
+        {
+            return x.user.Equals(y.user);
+        }
+        public int GetHashCode(Damage obj)
+        {
+            return obj.GetHashCode();
+        }
     }
 }
