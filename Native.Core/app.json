@@ -6,8 +6,8 @@
   "ret": 1,
   "apiver": 9,
   "name": "PCR公会战伤害计算工具",
-  "version": "1.2.0",
-  "version_id": 5,
+  "version": "1.2.1",
+  "version_id": 6,
   "author": "初音未来Alpha",
   "description": "PCR公会战伤害计算工具",
   "event": [

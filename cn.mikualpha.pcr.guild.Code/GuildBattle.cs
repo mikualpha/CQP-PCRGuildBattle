@@ -288,20 +288,20 @@ class GuildBattle
         return output;
     }
 
-    private void InitFile()
+    public static void InitFile()
     {
         FileOptions.GetInstance();
         if (!File.Exists(ApiModel.CQApi.AppDirectory + "Boss.ini"))
             WriteToFile(ApiModel.CQApi.AppDirectory + "Boss.ini", "6000000,8000000,10000000,12000000,20000000");
     }
 
-    private void WriteToFile(string filename, string content)
+    private static void WriteToFile(string filename, string content)
     {
         string[] contents = { content };
         WriteToFile(filename, contents);
     }
 
-    private void WriteToFile(string filename, string[] contents)
+    private static void WriteToFile(string filename, string[] contents)
     {
         using (StreamWriter file = new StreamWriter(@filename, false, Encoding.UTF8))
         {

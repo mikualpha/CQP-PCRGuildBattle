@@ -19,6 +19,8 @@ public class Event_AppStatus : IAppEnable, IAppDisable, ICQStartup
         // 如非必要，不建议在这里加载窗口。（可以添加菜单，让用户手动打开窗口）
         ApiModel.setModel(e.CQApi, e.CQLog);
         SQLiteManager.GetInstance();
+        FileOptions.GetInstance();
+        GuildBattle.InitFile();
 
         DirectoryInfo root = new DirectoryInfo(e.CQApi.AppDirectory);
         FileInfo[] files = root.GetFiles();

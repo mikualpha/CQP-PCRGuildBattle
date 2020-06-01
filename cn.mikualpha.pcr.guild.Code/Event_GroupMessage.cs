@@ -29,16 +29,16 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (!GuildBattle.GetInstance(e.FromGroup.Id).GetActive())
+        if (e.Message.Text.Equals("#help"))
         {
-            e.Handler = false;
+            e.CQApi.SendGroupMessage(e.FromGroup.Id, "[指令列表]\n" + "https://docs.qq.com/sheet/DYXBDZ1RmRXdXR0dH");
+            e.Handler = true;
             return;
         }
 
-        if (e.Message.Text.Equals("#help"))
+        if (!GuildBattle.GetInstance(e.FromGroup.Id).GetActive())
         {
-            e.CQApi.SendGroupMessage(e.FromGroup.Id, "[指令列表]\nhttps://docs.qq.com/sheet/DYXBDZ1RmRXdXR0dH");
-            e.Handler = true;
+            e.Handler = false;
             return;
         }
 
