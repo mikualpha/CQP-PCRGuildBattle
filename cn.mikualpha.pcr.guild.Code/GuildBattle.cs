@@ -140,12 +140,20 @@ class GuildBattle
             }
             text += "\n" + "该BOSS已被击败，下一个BOSS为:" +
                 "\n" + "第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS HP: " + bossdata[data.bossNumber - 1].ToString();
+            ApiModel.CQApi.SendGroupMessage(group, text);
+
+            string atStr = GetSubscribeStr(data.bossNumber);
+            if (atStr != "")
+            {
+                ApiModel.CQApi.SendGroupMessage(group, "[BOSS预约提醒] 您预约的BOSS已出现，请及时出刀\n" + atStr);
+            }
+            
         } else
         {
             text += "\n" + "该BOSS剩余血量: " + (bossdata[data.bossNumber - 1] - data.damage).ToString();
+            ApiModel.CQApi.SendGroupMessage(group, text);
         }
         SaveData();
-        ApiModel.CQApi.SendGroupMessage(group, text);
     }
 
     public void ChangeDamage() { }
@@ -184,6 +192,49 @@ class GuildBattle
 
     public Dictionary<long, string> GetMessages() { return data.messages; }
 
+    public string GetSubscribeStr(int boss_num)
+    {
+        string output = "";
+        List<long> removeList = new List<long>();
+        Dictionary<long, int> temp = new Dictionary<long, int>(data.subscribe);
+        foreach (KeyValuePair<long, int> kvp in temp)
+        {
+            if (kvp.Value != boss_num) continue;
+            output += "[CQ:at,qq=" + kvp.Key + "] ";
+            removeList.Add(kvp.Key);
+        }
+
+        for (int i = 0; i < removeList.Count; ++i) data.subscribe.Remove(removeList[i]);
+        return output;
+    }
+
+    public List<string> GetSubscribeList()
+    {
+        List<string> output = new List<string>();
+        foreach (KeyValuePair<long, int> kvp in data.subscribe)
+        {
+            output.Add("[" + GetUserName(group, kvp.Key) + "] 第" + kvp.Value + "号BOSS");
+        }
+        return output;
+    }
+
+    public bool AddSubscribe(long qq, int boss_num)
+    {
+        if (data.bossNumber == boss_num) return false;
+        if (data.subscribe.ContainsKey(qq)) data.subscribe.Remove(qq);
+        data.subscribe.Add(qq, boss_num);
+        return true;
+    }
+
+    public void RemoveSubscribe(long qq)
+    {
+        if (data.subscribe.ContainsKey(qq)) data.subscribe.Remove(qq);
+    }
+
+    public void ClearSubscribe()
+    {
+        data.subscribe.Clear();
+    }
 
     public static string GetUserName(long group, long qq)
     {
@@ -226,6 +277,7 @@ class GuildBattle
             data.battleUser = new List<long>();
             data.treeUser = new List<long>();
             data.messages = new Dictionary<long, string>();
+            data.subscribe = new Dictionary<long, int>();
         }
     }
 
@@ -342,6 +394,7 @@ class GuildBattle
         public List<long> battleUser { get; set; }
         public List<long> treeUser { get; set; }
         public Dictionary<long, string> messages { get; set; }
+        public Dictionary<long, int> subscribe { get; set; }
     }
 }
 

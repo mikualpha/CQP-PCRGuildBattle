@@ -16,7 +16,7 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (e.Message.Text.Contains("#启用公会战工具") && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id))
+        if (e.Message.Text.Contains("#启用公会战工具") && isAdmin(e))
         {
             if (GuildBattle.GetInstance(e.FromGroup.Id).GetActive()) e.CQApi.SendGroupMessage(e.FromGroup.Id, "工具已启用，该指令无效！");
             //else if (GuildBattle.GetInstance(e.FromGroup.Id).GetGroup() != -1) e.CQApi.SendGroupMessage(e.FromGroup.Id, "已在其它群启用工具，请先禁用！");
@@ -42,7 +42,7 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (e.Message.Text.Contains("#禁用公会战工具") && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id))
+        if (e.Message.Text.Contains("#禁用公会战工具") && isAdmin(e))
         {
             if (!GuildBattle.GetInstance(e.FromGroup.Id).GetActive()) e.CQApi.SendGroupMessage(e.FromGroup.Id, "工具已禁用，该指令无效！");
             else
@@ -83,7 +83,7 @@ public class Event_GroupMessage : IGroupMessage
             e.Handler = true;
             return;
         }
-        
+
 
         if (e.Message.Text.Equals("我挂树了") || e.Message.Text.Equals("救救救"))
         {
@@ -99,7 +99,7 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if ((e.Message.Text.StartsWith("取消挂树 [CQ:at,qq=") || e.Message.Text.StartsWith("取消挂树[CQ:at,qq=")) && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id))
+        if ((e.Message.Text.StartsWith("取消挂树 [CQ:at,qq=") || e.Message.Text.StartsWith("取消挂树[CQ:at,qq=")) && isAdmin(e))
         {
             long qq = GetOperateQQ(e.Message.Text);
             GuildBattle.GetInstance(e.FromGroup.Id).RemoveTreeUser(qq);
@@ -107,7 +107,7 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if ((e.Message.Text.StartsWith("取消出刀 [CQ:at,qq=") || e.Message.Text.StartsWith("取消出刀[CQ:at,qq=")) && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id))
+        if ((e.Message.Text.StartsWith("取消出刀 [CQ:at,qq=") || e.Message.Text.StartsWith("取消出刀[CQ:at,qq=")) && isAdmin(e))
         {
             long qq = GetOperateQQ(e.Message.Text);
             GuildBattle.GetInstance(e.FromGroup.Id).RemoveBattleUser(qq);
@@ -129,27 +129,16 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (e.Message.Text.StartsWith("伤害 [CQ:at,qq=") && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id))
+        if (e.Message.Text.StartsWith("伤害 [CQ:at,qq=") && isAdmin(e))
         {
             long qq = GetOperateQQ(e.Message.Text);
 
             string[] temp = e.Message.Text.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            if (temp.Length != 4)
-            {
-                e.CQApi.SendGroupMessage(e.FromGroup, "输入格式与要求不符！");
-                e.Handler = true;
-                return;
-            }
 
             int troop_num;
             long damage;
-            if (!int.TryParse(temp[2], out troop_num))
-            {
-                e.CQApi.SendGroupMessage(e.FromGroup, "输入格式与要求不符！");
-                e.Handler = true;
-                return;
-            }
-            if (!long.TryParse(temp[3], out damage))
+
+            if (temp.Length != 4 || !int.TryParse(temp[2], out troop_num) || !long.TryParse(temp[3], out damage))
             {
                 e.CQApi.SendGroupMessage(e.FromGroup, "输入格式与要求不符！");
                 e.Handler = true;
@@ -164,21 +153,11 @@ public class Event_GroupMessage : IGroupMessage
         if (e.Message.Text.StartsWith("伤害 "))
         {
             string[] temp = e.Message.Text.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            if (temp.Length != 3)
-            {
-                e.CQApi.SendGroupMessage(e.FromGroup, "输入格式与要求不符！");
-                e.Handler = true;
-                return;
-            }
 
             int troop_num;
             long damage;
-            if (!int.TryParse(temp[1], out troop_num)) {
-                e.CQApi.SendGroupMessage(e.FromGroup, "输入格式与要求不符！");
-                e.Handler = true;
-                return;
-            }
-            if (!long.TryParse(temp[2], out damage)) {
+
+            if (temp.Length != 3 || !int.TryParse(temp[1], out troop_num) || !long.TryParse(temp[2], out damage)) {
                 e.CQApi.SendGroupMessage(e.FromGroup, "输入格式与要求不符！");
                 e.Handler = true;
                 return;
@@ -189,23 +168,13 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (e.Message.Text.StartsWith("设置BOSS ") && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id))
+        if (e.Message.Text.StartsWith("设置BOSS ") && isAdmin(e))
         {
             string[] temp = e.Message.Text.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            if (temp.Length != 3) {
-                e.CQApi.SendGroupMessage(e.FromGroup, "输入格式与要求不符！");
-                e.Handler = true;
-                return;
-            }
 
             int frequency, boss_num;
 
-            if (!int.TryParse(temp[1], out frequency)) {
-                e.CQApi.SendGroupMessage(e.FromGroup, "输入格式与要求不符！");
-                e.Handler = true;
-                return;
-            }
-            if (!int.TryParse(temp[2], out boss_num)) {
+            if (temp.Length != 3 || !int.TryParse(temp[1], out frequency) || !int.TryParse(temp[2], out boss_num)) {
                 e.CQApi.SendGroupMessage(e.FromGroup, "输入格式与要求不符！");
                 e.Handler = true;
                 return;
@@ -215,7 +184,7 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (e.Message.Text.StartsWith("设置血量 ") && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id))
+        if (e.Message.Text.StartsWith("设置血量 ") && isAdmin(e))
         {
             string[] temp = e.Message.Text.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             if (temp.Length != 2) e.CQApi.SendGroupMessage(e.FromGroup, "输入格式与要求不符！");
@@ -227,31 +196,31 @@ public class Event_GroupMessage : IGroupMessage
         }
 
 
-        if (e.Message.Text.Equals("清空出刀") && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id))
+        if (e.Message.Text.Equals("清空出刀") && isAdmin(e))
         {
             GuildBattle.GetInstance(e.FromGroup.Id).ClearBattleUser();
             e.Handler = true;
             return;
         }
 
-        if (e.Message.Text.Equals("清空挂树") && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id))
+        if (e.Message.Text.Equals("清空挂树") && isAdmin(e))
         {
             GuildBattle.GetInstance(e.FromGroup.Id).ClearTreeUser();
             e.Handler = true;
             return;
         }
 
-        if (e.Message.Text.StartsWith("今日伤害 [CQ:at,qq=") && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id) && !FileOptions.GetInstance().isDisableAt())
+        if (e.Message.Text.StartsWith("今日伤害 [CQ:at,qq=") && isAdmin(e) && !FileOptions.GetInstance().isDisableAt())
         {
             long qq = GetOperateQQ(e.Message.Text);
             e.CQApi.SendPrivateMessage(e.FromQQ.Id, GetTodayDamage(e.FromGroup.Id, qq));
-            e.CQApi.SendPrivateMessage(qq, "[" + GuildBattle.GetUserName(e.FromGroup.Id, e.FromQQ.Id) + "] 查询了您的今日伤害数据");
+            //e.CQApi.SendPrivateMessage(qq, "[" + GuildBattle.GetUserName(e.FromGroup.Id, e.FromQQ.Id) + "] 查询了您的今日伤害数据");
             e.CQApi.SendGroupMessage(e.FromGroup.Id, "相关数据已通过私聊发送！");
             e.Handler = true;
             return;
         }
 
-        if (Regex.IsMatch(e.Message.Text, @"今日伤害 (\d+)") && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id))
+        if (Regex.IsMatch(e.Message.Text, @"今日伤害 (\d+)") && isAdmin(e))
         {
             Match match = Regex.Match(e.Message.Text, @"今日伤害 (\d+)");
             long qq = long.Parse(match.Groups[1].Value);
@@ -268,18 +237,18 @@ public class Event_GroupMessage : IGroupMessage
             e.Handler = true;
             return;
         }
- 
-        if (e.Message.Text.StartsWith("查看总伤害 [CQ:at,qq=") && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id) && !FileOptions.GetInstance().isDisableAt())
+
+        if (e.Message.Text.StartsWith("查看总伤害 [CQ:at,qq=") && isAdmin(e) && !FileOptions.GetInstance().isDisableAt())
         {
             long qq = GetOperateQQ(e.Message.Text);
-           e.CQApi.SendPrivateMessage(e.FromQQ.Id, GetRecentDaysDamages(e.FromGroup.Id, qq));
-            e.CQApi.SendPrivateMessage(qq, "[" + GuildBattle.GetUserName(e.FromGroup.Id, e.FromQQ.Id) + "] 查询了您的今日伤害数据");
+            e.CQApi.SendPrivateMessage(e.FromQQ.Id, GetRecentDaysDamages(e.FromGroup.Id, qq));
+            //e.CQApi.SendPrivateMessage(qq, "[" + GuildBattle.GetUserName(e.FromGroup.Id, e.FromQQ.Id) + "] 查询了您的今日伤害数据");
             e.CQApi.SendGroupMessage(e.FromGroup.Id, "相关数据已通过私聊发送！");
             e.Handler = true;
             return;
         }
 
-        if (Regex.IsMatch(e.Message.Text, @"查看总伤害 (\d+)") && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id))
+        if (Regex.IsMatch(e.Message.Text, @"查看总伤害 (\d+)") && isAdmin(e))
         {
             Match match = Regex.Match(e.Message.Text, @"查看总伤害 (\d+)");
             long qq = long.Parse(match.Groups[1].Value);
@@ -296,15 +265,15 @@ public class Event_GroupMessage : IGroupMessage
             e.Handler = true;
             return;
         }
-        
-        if (e.Message.Text.Equals("查看公会总伤害") && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id))
+
+        if (e.Message.Text.Equals("查看公会总伤害") && isAdmin(e))
         {
             e.CQApi.SendGroupMessage(e.FromGroup.Id, GetRecentDaysGuildTotalDamages(e.FromGroup.Id));
             e.Handler = true;
             return;
         }
 
-        if (e.Message.Text.Equals("出刀统计") && GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id))
+        if (e.Message.Text.Equals("出刀统计") && isAdmin(e))
         {
             e.CQApi.SendGroupMessage(e.FromGroup, BattleStatistics(e));
             e.Handler = true;
@@ -314,7 +283,7 @@ public class Event_GroupMessage : IGroupMessage
         if (e.Message.Text.Equals("查看留言板") || e.Message.Text.Equals("查看留言"))
         {
             string output = "【留言板】";
-            Dictionary<long, string> messages = GuildBattle.GetInstance(e.FromGroup.Id).GetMessages();
+            Dictionary<long, string> messages = new Dictionary<long, string>(GuildBattle.GetInstance(e.FromGroup.Id).GetMessages()); //简单粗暴解决并发问题，有待优化
             if (messages == null || messages.Count == 0)
             {
                 output += "\n无记录";
@@ -337,12 +306,70 @@ public class Event_GroupMessage : IGroupMessage
             string addMessage = Regex.Replace(temp[1], @"\[CQ[^\s\]]+\]", "");
             GuildBattle.GetInstance(e.FromGroup.Id).AddMessage(e.FromQQ.Id, addMessage.Trim());
             e.CQApi.SendGroupMessage(e.FromGroup.Id, "设置留言成功！");
+            e.Handler = true;
+            return;
         }
 
         if (e.Message.Text.Equals("删除留言") || e.Message.Text.Equals("取消留言"))
         {
             GuildBattle.GetInstance(e.FromGroup.Id).RemoveMessage(e.FromQQ.Id);
             e.CQApi.SendGroupMessage(e.FromGroup.Id, "删除留言成功！");
+            e.Handler = true;
+            return;
+        }
+
+        if (e.Message.Text.StartsWith("预约 "))
+        {
+            string[] temp = e.Message.Text.Split(new char[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+
+            int boss_num = 0;
+            if (!int.TryParse(temp[1], out boss_num) || boss_num < 1 || boss_num > 5)
+            {
+                e.CQApi.SendGroupMessage(e.FromGroup.Id, "参数错误！");
+                e.Handler = true;
+                return;
+            }
+
+            if (GuildBattle.GetInstance(e.FromGroup.Id).AddSubscribe(e.FromQQ.Id, boss_num))
+            {
+                e.CQApi.SendGroupMessage(e.FromGroup.Id, "已成功为[CQ:at,qq=" + e.FromQQ.Id.ToString() + "] 预约第" + temp[1] + "号BOSS" + "\n" + "注：只能同时预约一个BOSS，多次预约的数据将被覆盖");
+            } else
+            {
+                e.CQApi.SendGroupMessage(e.FromGroup.Id, "当前已经是第" + temp[1] + "号BOSS，预约无效");
+            }
+
+            e.Handler = true;
+            return;
+        }
+
+        if (e.Message.Text.Equals("取消预约"))
+        {
+            GuildBattle.GetInstance(e.FromGroup.Id).RemoveSubscribe(e.FromQQ.Id);
+            e.CQApi.SendGroupMessage(e.FromGroup.Id, "取消成功！");
+            e.Handler = true;
+            return;
+        }
+
+        if (e.Message.Text.Equals("清空预约") && isAdmin(e))
+        {
+            GuildBattle.GetInstance(e.FromGroup.Id).ClearSubscribe();
+            e.CQApi.SendGroupMessage(e.FromGroup.Id, "成功清空所有预约！");
+            e.Handler = true;
+            return;
+        }
+
+        if (e.Message.Text.Equals("查看预约") || e.Message.Text.Equals("预约列表"))
+        {
+            List<string> list = GuildBattle.GetInstance(e.FromGroup.Id).GetSubscribeList();
+            string text = "【预约列表】";
+            for (int i = 0; i < list.Count; ++i)
+            {
+                text += "\n" + list[i];
+            }
+            if (list.Count == 0) text += "\n无记录";
+            e.CQApi.SendGroupMessage(e.FromGroup.Id, text);
+            e.Handler = true;
+            return;
         }
     }
 
@@ -356,7 +383,7 @@ public class Event_GroupMessage : IGroupMessage
 
     public string GetRecentDaysDamages(long group, long qq)
     {
-        Dictionary<long, long> dayDamages = SQLiteManager.GetInstance().GetRecentDaysDamages(group, qq, 10);
+        Dictionary<long, long> dayDamages = new Dictionary<long, long>(SQLiteManager.GetInstance().GetRecentDaysDamages(group, qq, 10));
         string output = "[" + GuildBattle.GetUserName(group, qq) + "] 近期对BOSS造成的伤害：";
         if (dayDamages.Count == 0)
         {
@@ -377,7 +404,7 @@ public class Event_GroupMessage : IGroupMessage
 
     public string GetRecentDaysGuildTotalDamages(long group)
     {
-        Dictionary<long, long> dayDamages = SQLiteManager.GetInstance().GetRecentDaysGuildTotalDamages(group, 10);
+        Dictionary<long, long> dayDamages = new Dictionary<long, long>(SQLiteManager.GetInstance().GetRecentDaysGuildTotalDamages(group, 10));
         string output = "本公会近期对BOSS造成的伤害：";
         if (dayDamages.Count == 0)
         {
@@ -467,5 +494,10 @@ public class Event_GroupMessage : IGroupMessage
         output += "\n【已进行战斗次数(含补刀)】 " + totalTroop.ToString() + " 次";
         output += "\n【本日总伤害】 " + totalDamage.ToString();
         return output;
+    }
+
+    private bool isAdmin(CQGroupMessageEventArgs e)
+    {
+        return GuildBattle.GetInstance(e.FromGroup.Id).isAdmin(e.FromQQ.Id);
     }
 }
