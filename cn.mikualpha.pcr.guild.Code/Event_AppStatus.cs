@@ -47,6 +47,7 @@ public class Event_AppStatus : IAppEnable, IAppDisable, ICQStartup
         // 当应用被停用前，将收到此事件。
         // 如果酷Q载入时应用已被停用，则本函数【不会】被调用。
         // 无论本应用是否被启用，酷Q关闭前本函数都【不会】被调用。
+        GuildBattle.SaveAllData();
     }
 
     public void CQStartup(object sender, CQStartupEventArgs e)

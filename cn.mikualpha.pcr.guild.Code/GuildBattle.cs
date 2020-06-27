@@ -14,6 +14,8 @@ class GuildBattle
     private List<long> member = null;
     private long group = 0;
 
+    public const int BOSS_MAX = 5;
+
     private GuildBattle(long _group)
     {
         group = _group;
@@ -25,13 +27,16 @@ class GuildBattle
     public static GuildBattle GetInstance(long group)
     {
         if (ins == null) ins = new Dictionary<long, GuildBattle>();
-        if (!ins.ContainsKey(group)) ins.Add(group, new GuildBattle(group));
+        if (!ins.ContainsKey(group))
+        {
+            lock(ins) { if (!ins.ContainsKey(group)) ins.Add(group, new GuildBattle(group)); }
+        }
         return ins[group];
     }
 
+    #region 业务接口
     public static string GetSignChar() { return FileOptions.GetInstance().GetOptions()["MemberChar"]; }
 
-    #region 业务接口
     //遗留函数，现在当开关用
     public void SetActive(bool active)
     {
@@ -47,17 +52,22 @@ class GuildBattle
         if (data.battleUser.Contains(qq)) return;
         data.battleUser.Add(qq);
         SaveData();
-        ApiModel.CQApi.SendGroupMessage(group, "战斗状态已记录！目前战斗状态列表：\n" + PrintList(group, GetBattleUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
+        ApiModel.CQApi.SendGroupMessage(group, "战斗状态已记录！目前战斗状态列表：\n" + PrintList(group, GetBattleUser()) + "\n\n" + 
+            (data.treeUser.Count == 0 ? "" : "[注意]目前有 " + data.treeUser.Count.ToString() + " 人正在挂树！\n") +
+            "第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString()
+        );
     }
 
     public void ClearBattleUser() {
         data.battleUser.Clear();
         data.treeUser.Clear();
+        SaveData();
         ApiModel.CQApi.SendGroupMessage(group, "战斗列表已清空！");
     }
 
     public void ClearTreeUser() {
         data.treeUser.Clear();
+        SaveData();
         ApiModel.CQApi.SendGroupMessage(group, "挂树列表已清空！");
     }
 
@@ -106,24 +116,23 @@ class GuildBattle
         if (data.battleUser.Contains(qq)) data.battleUser.Remove(qq);
         if (data.treeUser.Contains(qq)) data.treeUser.Remove(qq);
 
-        string text = "";
+        string text = "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS]";
         long addDamage = SQLiteManager.GetInstance().AddDamage(group, qq, troop_num, Min(damage, bossdata[data.bossNumber - 1] - data.damage));
-        if (addDamage == 0)
+        if (addDamage == long.MinValue)
         {
             data.damage += damage;
-            text = "[" + GetUserName(group, qq) + "] 的第" + troop_num.ToString() + "队对第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS造成了" + damage.ToString() + "伤害";
-            SQLiteManager.GetInstance().AddLog(group, text);
+            SQLiteManager.GetInstance().AddLog(group, "[" + GetUserName(group, qq) + "] 的第" + troop_num.ToString() + "队对第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS造成了" + damage.ToString() + "伤害");
 
-            text = "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS]" +
-                "\n" + "[" + GetUserName(group, qq) + "] 的第" + troop_num.ToString() + "队共造成了" + damage.ToString() + "伤害";
-        } else
+            text += "\n" + "[" + GetUserName(group, qq) + "] 的第" + troop_num.ToString() + "队共造成了" + damage.ToString() + "伤害";
+        } else if (addDamage != 0)
         {
             data.damage += addDamage;
-            text = "[" + GetUserName(group, qq) + "] 将第" + troop_num.ToString() + "队造成的伤害由" + (damage - addDamage).ToString() + "修改为" + damage.ToString();
-            SQLiteManager.GetInstance().AddLog(group, text);
+            SQLiteManager.GetInstance().AddLog(group, "[" + GetUserName(group, qq) + "] 将第" + troop_num.ToString() + "队造成的伤害由" + (damage - addDamage).ToString() + "修改为" + damage.ToString());
 
-            text = "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS]" +
-                "\n" + "[" + GetUserName(group, qq) + "] 将第" + troop_num.ToString() + "队造成的伤害由" + (damage - addDamage).ToString() + "修改为" + damage.ToString();
+            text += "\n" + "[" + GetUserName(group, qq) + "] 将第" + troop_num.ToString() + "队造成的伤害由" + (damage - addDamage).ToString() + "修改为" + damage.ToString();
+        } else
+        {
+            text += "\n" + "您的伤害数据已经被正确记录！该指令无效！";
         }
         
         if (data.damage >= bossdata[data.bossNumber - 1])
@@ -133,7 +142,7 @@ class GuildBattle
             data.treeUser.Clear();
             data.battleUser.Clear();
             data.bossNumber += 1;
-            if (data.bossNumber > 5)
+            if (data.bossNumber > BOSS_MAX)
             {
                 data.bossNumber = 1;
                 data.frequency += 1;
@@ -182,12 +191,20 @@ class GuildBattle
     {
         if (data.messages.ContainsKey(qq)) RemoveMessage(qq);
         data.messages.Add(qq, message);
+        SaveData();
     }
 
     public void RemoveMessage(long qq)
     {
         if (!data.messages.ContainsKey(qq)) return;
         data.messages.Remove(qq);
+        SaveData();
+    }
+
+    public void ClearMessage()
+    {
+        data.messages.Clear();
+        SaveData();
     }
 
     public Dictionary<long, string> GetMessages() { return data.messages; }
@@ -211,10 +228,16 @@ class GuildBattle
     public List<string> GetSubscribeList()
     {
         List<string> output = new List<string>();
+        List<List<string>> temp = new List<List<string>>();
+
+        for (int i = 0; i < BOSS_MAX; ++i) temp.Add(new List<string>());
+
         foreach (KeyValuePair<long, int> kvp in data.subscribe)
         {
-            output.Add("[" + GetUserName(group, kvp.Key) + "] 第" + kvp.Value + "号BOSS");
+            temp[kvp.Value - 1].Add("[" + GetUserName(group, kvp.Key) + "] 第" + kvp.Value + "号BOSS");
         }
+
+        for (int i = 0; i < BOSS_MAX; ++i) output.AddRange(temp[i]);
         return output;
     }
 
@@ -223,17 +246,20 @@ class GuildBattle
         if (data.bossNumber == boss_num) return false;
         if (data.subscribe.ContainsKey(qq)) data.subscribe.Remove(qq);
         data.subscribe.Add(qq, boss_num);
+        SaveData();
         return true;
     }
 
     public void RemoveSubscribe(long qq)
     {
         if (data.subscribe.ContainsKey(qq)) data.subscribe.Remove(qq);
+        SaveData();
     }
 
     public void ClearSubscribe()
     {
         data.subscribe.Clear();
+        SaveData();
     }
 
     public static string GetUserName(long group, long qq)
@@ -264,21 +290,24 @@ class GuildBattle
     private void GetData()
     {
         string path = ApiModel.CQApi.AppDirectory + "Data-" + group.ToString() + ".ini";
+
         if (File.Exists(path))
         {
             data = JsonConvert.DeserializeObject<Data>(ReadFromFile(path));
-        } else
+        }
+        else
         {
             data = new Data();
             data.isActive = false;
             data.frequency = 1;
             data.bossNumber = 1;
             data.damage = 0;
-            data.battleUser = new List<long>();
-            data.treeUser = new List<long>();
-            data.messages = new Dictionary<long, string>();
-            data.subscribe = new Dictionary<long, int>();
         }
+
+        if (data.battleUser == null) data.battleUser = new List<long>();
+        if (data.treeUser == null) data.treeUser = new List<long>();
+        if (data.messages == null) data.messages = new Dictionary<long, string>();
+        if (data.subscribe == null) data.subscribe = new Dictionary<long, int>();
     }
 
     private void SaveData()
@@ -286,6 +315,14 @@ class GuildBattle
         string path = ApiModel.CQApi.AppDirectory + "Data-" + group.ToString() + ".ini";
         string text = JsonConvert.SerializeObject(data);
         WriteToFile(path, text);
+    }
+
+    public static void SaveAllData()
+    {
+        foreach(KeyValuePair<long, GuildBattle> temp in ins)
+        {
+            temp.Value.SaveData();
+        }
     }
 
     private void GetBossData()

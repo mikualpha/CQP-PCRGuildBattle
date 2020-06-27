@@ -318,12 +318,20 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
+        if (e.Message.Text.Equals("清空留言") && isAdmin(e))
+        {
+            GuildBattle.GetInstance(e.FromGroup.Id).ClearMessage();
+            e.CQApi.SendGroupMessage(e.FromGroup.Id, "已成功清空所有留言！");
+            e.Handler = true;
+            return;
+        }
+
         if (e.Message.Text.StartsWith("预约 "))
         {
             string[] temp = e.Message.Text.Split(new char[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
 
             int boss_num = 0;
-            if (!int.TryParse(temp[1], out boss_num) || boss_num < 1 || boss_num > 5)
+            if (!int.TryParse(temp[1], out boss_num) || boss_num < 1 || boss_num > GuildBattle.BOSS_MAX)
             {
                 e.CQApi.SendGroupMessage(e.FromGroup.Id, "参数错误！");
                 e.Handler = true;
@@ -353,7 +361,7 @@ public class Event_GroupMessage : IGroupMessage
         if (e.Message.Text.Equals("清空预约") && isAdmin(e))
         {
             GuildBattle.GetInstance(e.FromGroup.Id).ClearSubscribe();
-            e.CQApi.SendGroupMessage(e.FromGroup.Id, "成功清空所有预约！");
+            e.CQApi.SendGroupMessage(e.FromGroup.Id, "已成功清空所有预约！");
             e.Handler = true;
             return;
         }

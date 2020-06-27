@@ -99,15 +99,17 @@ class SQLiteManager
         return temp[0].damage;
     }
 
-    //0为新增，其它数值为修改偏移值
+    //LONG_MIN为新增，其它数值为修改偏移值
     public long AddDamage(long group, long qq, int troop, long damage)
     {
         List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE user = ? AND day = ? AND troop = ? AND group_number = ?", qq, GetDay(), troop, group);
         if (temp.Count == 0)
         {
             CreateDamage(group, qq, troop, damage);
-            return 0;
+            return long.MinValue;
         }
+
+        if (temp[0].damage == damage) return 0;
 
         _connection.Update(new Damage()
         {
