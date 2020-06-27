@@ -331,29 +331,44 @@ class GuildBattle
         bossdata = new List<long>();
         if (File.Exists(ApiModel.CQApi.AppDirectory + "Boss.ini"))
         {
-            string[] list = ReadFromFile(ApiModel.CQApi.AppDirectory + "Boss.ini").Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] list = ReadFromFile(ApiModel.CQApi.AppDirectory + "Boss.ini").Split(new char[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i < list.Length; ++i)
             {
-                long num = long.Parse(list[i]);
+                long num;
+                if (!long.TryParse(list[i], out num))
+                {
+                    ApiModel.CQLog.Warning("BossData", "BOSS血量数据读取失败，格式不正确！");
+                    InitBossData();
+                    return;
+                }
                 bossdata.Add(num);
             }
-
         } else {
-            bossdata.Add(6000000);
-            bossdata.Add(8000000);
-            bossdata.Add(10000000);
-            bossdata.Add(12000000);
-            bossdata.Add(20000000);
+            InitBossData();
         }
+    }
+
+    private void InitBossData()
+    {
+        bossdata.Add(6000000);
+        bossdata.Add(8000000);
+        bossdata.Add(10000000);
+        bossdata.Add(12000000);
+        bossdata.Add(20000000);
     }
 
     public bool isAdmin(long qq)
     {
         string adminStr = FileOptions.GetInstance().GetOptions()["Admin"];
-        string[] list = adminStr.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        string[] list = adminStr.Split(new char[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries);
         for (int i = 0; i < list.Length; ++i)
         {
-            long num = long.Parse(list[i]);
+            long num;
+            if (!long.TryParse(list[i], out num))
+            {
+                ApiModel.CQLog.Warning("AdminData", "管理员列表读取失败，格式不正确！");
+                return false;
+            }
             if (num == 0 || num == qq) return true;
         }
         return false;
@@ -366,11 +381,16 @@ class GuildBattle
 
         if (member != null) return member;
 
-        string[] list = memberStr.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        string[] list = memberStr.Split(new char[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries);
         List<long> output = new List<long>();
         for (int i = 0; i < list.Length; ++i)
         {
-            long num = long.Parse(list[i]);
+            long num;
+            if (!long.TryParse(list[i], out num))
+            {
+                ApiModel.CQLog.Warning("MemberListData", "成员列表读取失败，格式不正确！");
+                return null;
+            }
             output.Add(num);
         }
         member = output;

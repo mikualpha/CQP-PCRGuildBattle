@@ -223,7 +223,8 @@ public class Event_GroupMessage : IGroupMessage
         if (Regex.IsMatch(e.Message.Text, @"今日伤害 (\d+)") && isAdmin(e))
         {
             Match match = Regex.Match(e.Message.Text, @"今日伤害 (\d+)");
-            long qq = long.Parse(match.Groups[1].Value);
+            long qq;
+            if (!long.TryParse(match.Groups[1].Value, out qq)) return;
             e.CQApi.SendPrivateMessage(e.FromQQ.Id, GetTodayDamage(e.FromGroup.Id, qq));
             e.CQApi.SendPrivateMessage(qq, "[" + GuildBattle.GetUserName(e.FromGroup.Id, e.FromQQ.Id) + "] 查询了您的今日伤害数据");
             e.CQApi.SendGroupMessage(e.FromGroup.Id, "相关数据已通过私聊发送！");
@@ -251,7 +252,8 @@ public class Event_GroupMessage : IGroupMessage
         if (Regex.IsMatch(e.Message.Text, @"查看总伤害 (\d+)") && isAdmin(e))
         {
             Match match = Regex.Match(e.Message.Text, @"查看总伤害 (\d+)");
-            long qq = long.Parse(match.Groups[1].Value);
+            long qq;
+            if (!long.TryParse(match.Groups[1].Value, out qq)) return;
             e.CQApi.SendPrivateMessage(e.FromQQ.Id, GetRecentDaysDamages(e.FromGroup.Id, qq));
             e.CQApi.SendPrivateMessage(qq, "[" + GuildBattle.GetUserName(e.FromGroup.Id, e.FromQQ.Id) + "] 查询了您的今日伤害数据");
             e.CQApi.SendGroupMessage(e.FromGroup.Id, "相关数据已通过私聊发送！");
