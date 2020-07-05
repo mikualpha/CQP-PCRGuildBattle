@@ -1,9 +1,11 @@
 ﻿using SQLite;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 class SQLiteManager
 {
+    private readonly int SQLITE_VERSION = 1;
     private static SQLiteManager ins = null;
     private SQLiteConnection _connection = null;
 
@@ -21,8 +23,40 @@ class SQLiteManager
     public void CreateTables()
     {
         _connection = new SQLiteConnection(ApiModel.CQApi.AppDirectory + "SQLite.db");
+        CheckVersion();
         _connection.CreateTable<Log>();
         _connection.CreateTable<Damage>();
+        _connection.CreateTable<SaveLoad>();
+    }
+
+    public void AddVersion()
+    {
+        _connection.Insert(new Setting()
+        {
+            key = "Version",
+            value = SQLITE_VERSION.ToString()
+        }, "");
+    }
+
+    public void CheckVersion()
+    {
+        if (_connection.Query<TableName>("SELECT * FROM SQLITE_MASTER WHERE type= 'table' AND name = 'Setting'").Count == 0)
+        {
+            _connection.CreateTable<Setting>(); //偷个懒
+        }
+
+        List<Setting> temp = _connection.Query<Setting>("SELECT * FROM Setting WHERE key = 'Version'");
+        if (temp.Count == 0 || int.Parse(temp[0].value) < SQLITE_VERSION)
+        {
+            _connection.Close();
+            if (!Directory.Exists(ApiModel.CQApi.AppDirectory + "Backup/"))
+                Directory.CreateDirectory(ApiModel.CQApi.AppDirectory + "Backup/");
+            File.Move(ApiModel.CQApi.AppDirectory + "SQLite.db", ApiModel.CQApi.AppDirectory + "Backup/SQLite(" + GetTimeStamp().ToString() + ").db");
+            _connection = new SQLiteConnection(ApiModel.CQApi.AppDirectory + "SQLite.db");
+            _connection.CreateTable<Setting>();
+            AddVersion();
+            ApiModel.CQLog.Info("数据库版本升级", "数据库结构更新，将在原数据库备份后重新建立数据库……");
+        }
     }
 
     public void AddLog(long _group, string _text)
@@ -46,16 +80,24 @@ class SQLiteManager
         return output;
     }
 
-    private void CreateDamage(long group, long qq, int troop, long damage)
+    public bool CreateDamage(long group, long qq, int troop, long damage, int frequency, int boss_num)
     {
-        _connection.Insert(new Damage()
+        List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE user = ? AND day = ? AND troop = ? AND group_number = ?", qq, GetDay(), troop, group);
+        if (temp.Count == 0)
         {
-            group_number = group,
-            user = qq,
-            troop = troop,
-            damage = damage,
-            day = GetDay()
-        }, "");
+            _connection.Insert(new Damage()
+            {
+                group_number = group,
+                user = qq,
+                troop = troop,
+                damage = damage,
+                day = GetDay(),
+                frequency = frequency,
+                boss_num = boss_num
+            }, "");
+            return true;
+        }
+        return false;
     }
 
     public List<Damage> GetTodayDamages(long group, long qq)
@@ -100,15 +142,11 @@ class SQLiteManager
     }
 
     //LONG_MIN为新增，其它数值为修改偏移值
-    public long AddDamage(long group, long qq, int troop, long damage)
+    public long AddDamage(long group, long qq, int troop, long damage, int frequency, int boss_num)
     {
-        List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE user = ? AND day = ? AND troop = ? AND group_number = ?", qq, GetDay(), troop, group);
-        if (temp.Count == 0)
-        {
-            CreateDamage(group, qq, troop, damage);
-            return long.MinValue;
-        }
+        if (CreateDamage(group, qq, troop, damage, frequency, boss_num)) return long.MinValue;
 
+        List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE user = ? AND day = ? AND troop = ? AND group_number = ?", qq, GetDay(), troop, group);
         if (temp[0].damage == damage) return 0;
 
         _connection.Update(new Damage()
@@ -121,6 +159,34 @@ class SQLiteManager
             damage = damage
         });
         return damage - temp[0].damage;
+    }
+
+    public void SetSL(long group, long qq)
+    {
+        _connection.Insert(new SaveLoad()
+        {
+            group_number = group,
+            user = qq,
+            day = GetDay(),
+            time = GetTimeStamp()
+        }, "");
+    }
+
+    public void RemoveSL(long group, long qq)
+    {
+        List<SaveLoad> temp = _connection.Query<SaveLoad>("SELECT * FROM SaveLoad WHERE group_number = ? AND user = ? AND day = ?", group, qq, GetDay());
+        if (temp.Count == 0) return;
+        _connection.Delete(new SaveLoad()
+        {
+            id = temp[0].id
+        });
+    }
+
+    public long GetSL(long group, long qq)
+    {
+        List<SaveLoad> temp = _connection.Query<SaveLoad>("SELECT time FROM SaveLoad WHERE group_number = ? AND user = ? AND day = ?", group, qq, GetDay());
+        if (temp.Count == 0) return -1;
+        return temp[0].time;
     }
 
     public static long GetTimeStamp()
@@ -139,7 +205,7 @@ class SQLiteManager
         return dateTime.AddDays(day).ToShortDateString();
     }
 
-    private string ConvertIntDateTime(long d)
+    public static string ConvertIntDateTime(long d)
     {
         DateTime time = DateTime.MinValue;
         DateTime startTime = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1));
@@ -172,6 +238,24 @@ class SQLiteManager
         public int troop { get; set; }
         [NotNull]
         public long damage { get; set; }
+        [NotNull]
+        public int frequency { get; set; }
+        [NotNull]
+        public int boss_num { get; set; }
+    }
+
+    public class SaveLoad
+    {
+        [PrimaryKey, AutoIncrement]
+        public int id { get; set; }
+        [NotNull]
+        public long group_number { get; set; }
+        [NotNull]
+        public long user { get; set; }
+        [NotNull]
+        public long day { get; set; }
+        [NotNull]
+        public long time { get; set; }
     }
 
     public class DayDamage
@@ -179,6 +263,20 @@ class SQLiteManager
         public long user { get; set; }
         public long day { get; set; }
         public long total { get; set; }
+    }
+
+    public class Setting
+    {
+        [PrimaryKey, AutoIncrement]
+        public int id { get; set; }
+        [Unique]
+        public string key { get; set; }
+        public string value { get; set; }
+    }
+
+    public class TableName
+    {
+        public string name { get; set; }
     }
 
     public class DamageComparer : IEqualityComparer<Damage>

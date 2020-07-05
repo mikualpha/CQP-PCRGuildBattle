@@ -129,7 +129,7 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (e.Message.Text.StartsWith("伤害 [CQ:at,qq=") && isAdmin(e))
+        if ((e.Message.Text.StartsWith("伤害 [CQ:at,qq=") || e.Message.Text.StartsWith("修改伤害 [CQ:at,qq=")) && isAdmin(e))
         {
             long qq = GetOperateQQ(e.Message.Text);
 
@@ -145,12 +145,13 @@ public class Event_GroupMessage : IGroupMessage
                 return;
             }
 
-            GuildBattle.GetInstance(e.FromGroup.Id).PushDamage(qq, troop_num, damage);
+            if (e.Message.Text.StartsWith("修改伤害 [CQ:at,qq=")) GuildBattle.GetInstance(e.FromGroup.Id).PushDamage(qq, troop_num, damage, true);
+            else GuildBattle.GetInstance(e.FromGroup.Id).PushDamage(qq, troop_num, damage, false);
             e.Handler = true;
             return;
         }
 
-        if (e.Message.Text.StartsWith("伤害 "))
+        if (e.Message.Text.StartsWith("伤害 ") || e.Message.Text.StartsWith("修改伤害 "))
         {
             string[] temp = e.Message.Text.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -163,7 +164,8 @@ public class Event_GroupMessage : IGroupMessage
                 return;
             }
 
-            GuildBattle.GetInstance(e.FromGroup.Id).PushDamage(e.FromQQ.Id, troop_num, damage);
+            if (e.Message.Text.StartsWith("修改伤害 ")) GuildBattle.GetInstance(e.FromGroup.Id).PushDamage(e.FromQQ.Id, troop_num, damage, true);
+            else GuildBattle.GetInstance(e.FromGroup.Id).PushDamage(e.FromQQ.Id, troop_num, damage, false);
             e.Handler = true;
             return;
         }
@@ -378,6 +380,70 @@ public class Event_GroupMessage : IGroupMessage
             }
             if (list.Count == 0) text += "\n无记录";
             e.CQApi.SendGroupMessage(e.FromGroup.Id, text);
+            e.Handler = true;
+            return;
+        }
+
+        if (e.Message.Text.Equals("BOSS状态"))
+        {
+            e.CQApi.SendGroupMessage(e.FromGroup.Id, GuildBattle.GetInstance(e.FromGroup.Id).GetBossInfo());
+            e.Handler = true;
+            return;
+        }
+
+        if (e.Message.Text.Equals("申请SL") || (e.Message.Text.StartsWith("申请SL [CQ:at,qq=") && isAdmin(e)))
+        {
+            long qq = e.FromQQ.Id;
+            if (e.Message.Text.StartsWith("申请SL [CQ:at,qq="))
+            {
+                qq = GetOperateQQ(e.Message.Text);
+            }
+            if (GuildBattle.GetInstance(e.FromGroup.Id).SetSL(qq))
+            {
+                e.CQApi.SendGroupMessage(e.FromGroup.Id, "今日SL次数使用状态已记录！\n[今日SL使用状态] 已使用\n[使用时间] " + SQLiteManager.ConvertIntDateTime(SQLiteManager.GetTimeStamp()));
+            } else
+            {
+                e.CQApi.SendGroupMessage(e.FromGroup.Id, "今日SL次数已用完！指令无效！");
+            }
+            e.Handler = true;
+            return;
+        }
+
+        if (e.Message.Text.Equals("撤销SL") || (e.Message.Text.StartsWith("撤销SL [CQ:at,qq=") && isAdmin(e)))
+        {
+            long qq = e.FromQQ.Id;
+            if (e.Message.Text.StartsWith("撤销SL [CQ:at,qq="))
+            {
+                qq = GetOperateQQ(e.Message.Text);
+            }
+            if (GuildBattle.GetInstance(e.FromGroup.Id).RemoveSL(qq))
+            {
+                e.CQApi.SendGroupMessage(e.FromGroup.Id, "今日SL使用状态已成功撤销！\n[今日SL使用状态] 未使用\n[使用时间] 无");
+            }
+            else
+            {
+                e.CQApi.SendGroupMessage(e.FromGroup.Id, "今日SL次数仍未被使用！指令无效！");
+            }
+            e.Handler = true;
+            return;
+        }
+
+        if (e.Message.Text.Equals("查询SL") || (e.Message.Text.StartsWith("查询SL [CQ:at,qq=") && isAdmin(e)))
+        {
+            long qq = e.FromQQ.Id;
+            if (e.Message.Text.StartsWith("查询SL [CQ:at,qq="))
+            {
+                qq = GetOperateQQ(e.Message.Text);
+            }
+            long checkTime = GuildBattle.GetInstance(e.FromGroup.Id).GetSLStatus(qq);
+            if (checkTime > -1)
+            {
+                e.CQApi.SendGroupMessage(e.FromGroup.Id, "[今日SL使用状态] 已使用\n[使用时间] " + SQLiteManager.ConvertIntDateTime(checkTime));
+            }
+            else
+            {
+                e.CQApi.SendGroupMessage(e.FromGroup.Id, "[今日SL使用状态] 未使用\n[使用时间] 无");
+            }
             e.Handler = true;
             return;
         }

@@ -53,7 +53,7 @@ class GuildBattle
         data.battleUser.Add(qq);
         SaveData();
         ApiModel.CQApi.SendGroupMessage(group, "战斗状态已记录！目前战斗状态列表：\n" + PrintList(group, GetBattleUser()) + "\n\n" + 
-            (data.treeUser.Count == 0 ? "" : "[注意]目前有 " + data.treeUser.Count.ToString() + " 人正在挂树！\n") +
+            (data.treeUser.Count == 0 ? "" : "【注意】 目前有 " + data.treeUser.Count.ToString() + " 人正在挂树！\n") +
             "第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString()
         );
     }
@@ -92,7 +92,10 @@ class GuildBattle
         data.treeUser.Add(qq);
         SaveData();
         SQLiteManager.GetInstance().AddLog(group, "[" + GetUserName(group, qq) + "] 挂在树上了...");
-        ApiModel.CQApi.SendGroupMessage(group, "挂树状态已记录！目前挂树状态列表：\n" + PrintList(group, GetTreeUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
+        string outputStr = "挂树状态已记录！目前挂树状态列表：\n" + PrintList(group, GetTreeUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString();
+        string treeAdminStr = GetTreeAdminStr();
+        if (treeAdminStr != "") outputStr += "\n" + treeAdminStr + "快组织救人啦！";
+        ApiModel.CQApi.SendGroupMessage(group, outputStr);
     }
 
     public List<long> GetTreeUser() { return data.treeUser; }
@@ -105,7 +108,12 @@ class GuildBattle
         ApiModel.CQApi.SendGroupMessage(group, "已移除挂树状态！目前挂树状态列表：\n" + PrintList(group, GetTreeUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
     }
 
-    public void PushDamage(long qq, int troop_num, long damage)
+    public string GetBossInfo()
+    {
+        return "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS] 剩余血量: " + (bossdata[data.bossNumber - 1] - data.damage).ToString();
+    }
+
+    public void PushDamage(long qq, int troop_num, long damage, bool can_modify = false)
     {
         if (troop_num > 6 || troop_num < 1)
         {
@@ -117,7 +125,21 @@ class GuildBattle
         if (data.treeUser.Contains(qq)) data.treeUser.Remove(qq);
 
         string text = "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS]";
-        long addDamage = SQLiteManager.GetInstance().AddDamage(group, qq, troop_num, Min(damage, bossdata[data.bossNumber - 1] - data.damage));
+
+        long addDamage;
+        if (can_modify)
+        {
+            addDamage = SQLiteManager.GetInstance().AddDamage(group, qq, troop_num, Min(damage, bossdata[data.bossNumber - 1] - data.damage), data.frequency, data.bossNumber);
+        } else {
+            if (SQLiteManager.GetInstance().CreateDamage(group, qq, troop_num, Min(damage, bossdata[data.bossNumber - 1] - data.damage), data.frequency, data.bossNumber))
+            {
+                addDamage = long.MinValue;
+            } else
+            {
+                addDamage = 0; //指令无效
+            }
+        }
+
         if (addDamage == long.MinValue)
         {
             data.damage += damage;
@@ -132,7 +154,8 @@ class GuildBattle
             text += "\n" + "[" + GetUserName(group, qq) + "] 将第" + troop_num.ToString() + "队造成的伤害由" + (damage - addDamage).ToString() + "修改为" + damage.ToString();
         } else
         {
-            text += "\n" + "您的伤害数据已经被正确记录！该指令无效！";
+            if (can_modify) text += "\n" + "您本次的伤害数据已经被正确记录！该指令无效！";
+            else text += "\n" + "您本队伍的伤害数据已有记录！该指令无效！";
         }
         
         if (data.damage >= bossdata[data.bossNumber - 1])
@@ -262,6 +285,25 @@ class GuildBattle
         SaveData();
     }
 
+    public bool SetSL(long qq)
+    {
+        if (GetSLStatus(qq) > 0) return false;
+        SQLiteManager.GetInstance().SetSL(group, qq);
+        return true;
+    }
+
+    public bool RemoveSL(long qq)
+    {
+        if (GetSLStatus(qq) == -1) return false;
+        SQLiteManager.GetInstance().RemoveSL(group, qq);
+        return true;
+    }
+
+    public long GetSLStatus(long qq)
+    {
+        return SQLiteManager.GetInstance().GetSL(group, qq);
+    }
+
     public static string GetUserName(long group, long qq)
     {
         GroupMemberInfo info = ApiModel.CQApi.GetGroupMemberInfo(group, qq, true);
@@ -372,6 +414,27 @@ class GuildBattle
             if (num == 0 || num == qq) return true;
         }
         return false;
+    }
+
+    private string GetTreeAdminStr()
+    {
+        string treeAdminStr = FileOptions.GetInstance().GetOptions()["TreeAdmin"];
+
+        if (treeAdminStr == "0" || treeAdminStr == "") return "";
+
+        string[] list = treeAdminStr.Split(new char[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries);
+        string output = "";
+        for (int i = 0; i < list.Length; ++i)
+        {
+            long num;
+            if (!long.TryParse(list[i], out num))
+            {
+                ApiModel.CQLog.Warning("TreeAdminData", "挂树通知列表读取失败，格式不正确！");
+                return "";
+            }
+            output += "[CQ:at,qq=" + num + "] ";
+        }
+        return output;
     }
 
     public List<long> GetMemberList()

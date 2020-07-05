@@ -38,6 +38,7 @@ class FileOptions
         fileOptions = new Dictionary<string, string>();
         //fileOptions["Group"] = "0";
         fileOptions["Admin"] = "0";
+        fileOptions["TreeAdmin"] = "0";
         fileOptions["Member"] = "0";
         fileOptions["MemberChar"] = "";
         fileOptions["DisableAt"] = "0";
@@ -54,6 +55,8 @@ class FileOptions
         writer.Write("//请仅修改等号后部分，其余部分修改可能会出现问题！\r\n" +
                     "//管理员列表\r\n" +
                     "Admin=123456789,987654321\r\n" +
+                    "//挂树通知列表\r\n" +
+                    "TreeAdmin=123456789,987654321\r\n" +
                     "//成员标识符(与成员列表二选一即可)\r\n" +
                     "MemberChar=*\r\n" +
                     "//成员列表，半角逗号分隔，标0为启用标识符模式\r\n" +
