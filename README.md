@@ -1,7 +1,9 @@
 # CQP-PCRGuildBattle
 公主连接Re:Dive 公会战统计机器人
 
-本插件基于C#语言编写。目前仍在开发中……
+因CoolQ已经关闭，可采用[MiraiNative框架](https://github.com/iTXTech/mirai-native)使用本插件。
+
+Gitter聊天室：[![Gitter](https://badges.gitter.im/MikuAlphaBot/community.svg)](https://gitter.im/MikuAlphaBot/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 ### 使用组件
 
