@@ -84,7 +84,6 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-
         if (e.Message.Text.Equals("我挂树了") || e.Message.Text.Equals("救救救"))
         {
             GuildBattle.GetInstance(e.FromGroup.Id).AddTreeUser(e.FromQQ.Id);
@@ -196,7 +195,6 @@ public class Event_GroupMessage : IGroupMessage
             e.Handler = true;
             return;
         }
-
 
         if (e.Message.Text.Equals("清空出刀") && isAdmin(e))
         {
@@ -384,14 +382,14 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (e.Message.Text.Equals("BOSS状态"))
+        if (e.Message.Text.Equals("状态"))
         {
-            e.CQApi.SendGroupMessage(e.FromGroup.Id, GuildBattle.GetInstance(e.FromGroup.Id).GetBossInfo());
+            e.CQApi.SendGroupMessage(e.FromGroup.Id, GuildBattle.GetInstance(e.FromGroup.Id).GetBossStatus());
             e.Handler = true;
             return;
         }
 
-        if (e.Message.Text.Equals("申请SL") || (e.Message.Text.StartsWith("申请SL [CQ:at,qq=") && isAdmin(e)))
+        if (e.Message.Text.ToUpper().Equals("申请SL") || (e.Message.Text.ToUpper().StartsWith("申请SL [CQ:at,qq=") && isAdmin(e)))
         {
             long qq = e.FromQQ.Id;
             if (e.Message.Text.StartsWith("申请SL [CQ:at,qq="))
@@ -409,7 +407,7 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (e.Message.Text.Equals("撤销SL") || (e.Message.Text.StartsWith("撤销SL [CQ:at,qq=") && isAdmin(e)))
+        if (e.Message.Text.ToUpper().Equals("撤销SL") || (e.Message.Text.ToUpper().StartsWith("撤销SL [CQ:at,qq=") && isAdmin(e)))
         {
             long qq = e.FromQQ.Id;
             if (e.Message.Text.StartsWith("撤销SL [CQ:at,qq="))
@@ -428,7 +426,7 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (e.Message.Text.Equals("查询SL") || (e.Message.Text.StartsWith("查询SL [CQ:at,qq=") && isAdmin(e)))
+        if (e.Message.Text.ToUpper().Equals("查询SL") || (e.Message.Text.ToUpper().StartsWith("查询SL [CQ:at,qq=") && isAdmin(e)))
         {
             long qq = e.FromQQ.Id;
             if (e.Message.Text.StartsWith("查询SL [CQ:at,qq="))

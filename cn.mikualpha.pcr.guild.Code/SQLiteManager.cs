@@ -156,7 +156,9 @@ class SQLiteManager
             user = temp[0].user,
             day = temp[0].day,
             troop = temp[0].troop,
-            damage = damage
+            damage = damage,
+            frequency = temp[0].frequency,
+            boss_num = temp[0].boss_num
         });
         return damage - temp[0].damage;
     }

@@ -47,14 +47,23 @@ class GuildBattle
     //遗留函数，现在当开关用
     public bool GetActive() { return data.isActive; }
 
+    public string GetBossStatus() {
+        return "【公会战BOSS状态】\n" +
+            (data.treeUser.Count == 0 ? "" : "【注意】 目前有 " + data.treeUser.Count.ToString() + " 人正在挂树！\n") +
+            "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS] 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString();
+    }
+
     public void AddBattleUser(long qq)
     {
         if (data.battleUser.Contains(qq)) return;
         data.battleUser.Add(qq);
         SaveData();
+
+        long SLTime = GetSLStatus(qq); // SL时间，-1为未SL
         ApiModel.CQApi.SendGroupMessage(group, "战斗状态已记录！目前战斗状态列表：\n" + PrintList(group, GetBattleUser()) + "\n\n" + 
             (data.treeUser.Count == 0 ? "" : "【注意】 目前有 " + data.treeUser.Count.ToString() + " 人正在挂树！\n") +
-            "第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString()
+            (SLTime == -1 ? "" : "【注意】 您今日已于" + SQLiteManager.ConvertIntDateTime(SLTime) + "(GMT +8) 进行过SL操作！\n") +
+            "第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString()
         );
     }
 
@@ -78,7 +87,7 @@ class GuildBattle
         if (!data.battleUser.Contains(qq)) return;
         data.battleUser.Remove(qq);
         SaveData();
-        ApiModel.CQApi.SendGroupMessage(group, "已移除战斗状态！目前战斗状态列表：\n" + PrintList(group, GetBattleUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
+        ApiModel.CQApi.SendGroupMessage(group, "已移除战斗状态！目前战斗状态列表：\n" + PrintList(group, GetBattleUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
     }
 
     public void AddTreeUser(long qq)
@@ -92,7 +101,7 @@ class GuildBattle
         data.treeUser.Add(qq);
         SaveData();
         SQLiteManager.GetInstance().AddLog(group, "[" + GetUserName(group, qq) + "] 挂在树上了...");
-        string outputStr = "挂树状态已记录！目前挂树状态列表：\n" + PrintList(group, GetTreeUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString();
+        string outputStr = "挂树状态已记录！目前挂树状态列表：\n" + PrintList(group, GetTreeUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString();
         string treeAdminStr = GetTreeAdminStr();
         if (treeAdminStr != "") outputStr += "\n" + treeAdminStr + "快组织救人啦！";
         ApiModel.CQApi.SendGroupMessage(group, outputStr);
@@ -105,12 +114,7 @@ class GuildBattle
         if (!data.treeUser.Contains(qq)) return;
         data.treeUser.Remove(qq);
         SaveData();
-        ApiModel.CQApi.SendGroupMessage(group, "已移除挂树状态！目前挂树状态列表：\n" + PrintList(group, GetTreeUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
-    }
-
-    public string GetBossInfo()
-    {
-        return "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS] 剩余血量: " + (bossdata[data.bossNumber - 1] - data.damage).ToString();
+        ApiModel.CQApi.SendGroupMessage(group, "已移除挂树状态！目前挂树状态列表：\n" + PrintList(group, GetTreeUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
     }
 
     public void PushDamage(long qq, int troop_num, long damage, bool can_modify = false)
@@ -187,8 +191,6 @@ class GuildBattle
         }
         SaveData();
     }
-
-    public void ChangeDamage() { }
 
     public void SetDamage(long lessBlood)
     {
