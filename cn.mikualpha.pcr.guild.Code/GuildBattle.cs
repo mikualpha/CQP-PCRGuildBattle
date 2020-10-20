@@ -62,7 +62,7 @@ class GuildBattle
         long SLTime = GetSLStatus(qq); // SL时间，-1为未SL
         ApiModel.CQApi.SendGroupMessage(group, "战斗状态已记录！目前战斗状态列表：\n" + PrintList(group, GetBattleUser()) + "\n\n" + 
             (data.treeUser.Count == 0 ? "" : "【注意】 目前有 " + data.treeUser.Count.ToString() + " 人正在挂树！\n") +
-            (SLTime == -1 ? "" : "【注意】 您今日已于" + SQLiteManager.ConvertIntDateTime(SLTime) + "(GMT +8) 进行过SL操作！\n") +
+            (SLTime == -1 ? "" : "【注意】 您今日已于" + SQLiteManager.ConvertIntDateTime(SLTime) + "(GMT+8) 进行过SL操作！\n") +
             "第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString()
         );
     }

@@ -84,9 +84,17 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (e.Message.Text.Equals("我挂树了") || e.Message.Text.Equals("救救救"))
+        if (e.Message.Text.Equals("我挂树了") || e.Message.Text.Equals("救救救") || e.Message.Text.Equals("申请挂树"))
         {
             GuildBattle.GetInstance(e.FromGroup.Id).AddTreeUser(e.FromQQ.Id);
+            e.Handler = true;
+            return;
+        }
+
+        if ((e.Message.Text.StartsWith("他挂树了 [CQ:at,qq=") || e.Message.Text.StartsWith("他挂树了[CQ:at,qq=")) && isAdmin(e))
+        {
+            long qq = GetOperateQQ(e.Message.Text);
+            GuildBattle.GetInstance(e.FromGroup.Id).AddTreeUser(qq);
             e.Handler = true;
             return;
         }
@@ -389,10 +397,10 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (e.Message.Text.ToUpper().Equals("申请SL") || (e.Message.Text.ToUpper().StartsWith("申请SL [CQ:at,qq=") && isAdmin(e)))
+        if (e.Message.Text.ToUpper().Equals("申请SL") || (e.Message.Text.ToUpper().StartsWith("申请SL [CQ:at,qq=", true, null) && isAdmin(e)))
         {
             long qq = e.FromQQ.Id;
-            if (e.Message.Text.StartsWith("申请SL [CQ:at,qq="))
+            if (e.Message.Text.ToUpper().StartsWith("申请SL [CQ:at,qq=", true, null))
             {
                 qq = GetOperateQQ(e.Message.Text);
             }
@@ -407,10 +415,10 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (e.Message.Text.ToUpper().Equals("撤销SL") || (e.Message.Text.ToUpper().StartsWith("撤销SL [CQ:at,qq=") && isAdmin(e)))
+        if (e.Message.Text.ToUpper().Equals("撤销SL") || (e.Message.Text.ToUpper().StartsWith("撤销SL [CQ:at,qq=", true, null) && isAdmin(e)))
         {
             long qq = e.FromQQ.Id;
-            if (e.Message.Text.StartsWith("撤销SL [CQ:at,qq="))
+            if (e.Message.Text.ToUpper().StartsWith("撤销SL [CQ:at,qq=", true, null))
             {
                 qq = GetOperateQQ(e.Message.Text);
             }
@@ -426,10 +434,10 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
-        if (e.Message.Text.ToUpper().Equals("查询SL") || (e.Message.Text.ToUpper().StartsWith("查询SL [CQ:at,qq=") && isAdmin(e)))
+        if (e.Message.Text.ToUpper().Equals("查询SL") || (e.Message.Text.ToUpper().StartsWith("查询SL [CQ:at,qq=", true, null) && isAdmin(e)))
         {
             long qq = e.FromQQ.Id;
-            if (e.Message.Text.StartsWith("查询SL [CQ:at,qq="))
+            if (e.Message.Text.ToUpper().StartsWith("查询SL [CQ:at,qq=", true, null))
             {
                 qq = GetOperateQQ(e.Message.Text);
             }
