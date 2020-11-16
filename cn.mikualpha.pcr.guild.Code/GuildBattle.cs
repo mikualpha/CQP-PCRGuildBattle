@@ -117,7 +117,7 @@ class GuildBattle
         ApiModel.CQApi.SendGroupMessage(group, "已移除挂树状态！目前挂树状态列表：\n" + PrintList(group, GetTreeUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
     }
 
-    public void PushDamage(long qq, int troop_num, long damage, bool can_modify = false)
+    public void PushDamage(long qq, int troop_num, long damage, bool can_modify = false, long troop_operator = -1)
     {
         if (troop_num > 6 || troop_num < 1)
         {
@@ -135,7 +135,7 @@ class GuildBattle
         {
             addDamage = SQLiteManager.GetInstance().AddDamage(group, qq, troop_num, Min(damage, bossdata[data.bossNumber - 1] - data.damage), data.frequency, data.bossNumber);
         } else {
-            if (SQLiteManager.GetInstance().CreateDamage(group, qq, troop_num, Min(damage, bossdata[data.bossNumber - 1] - data.damage), data.frequency, data.bossNumber))
+            if (SQLiteManager.GetInstance().CreateDamage(group, qq, troop_num, Min(damage, bossdata[data.bossNumber - 1] - data.damage), data.frequency, data.bossNumber, troop_operator))
             {
                 addDamage = long.MinValue;
             } else

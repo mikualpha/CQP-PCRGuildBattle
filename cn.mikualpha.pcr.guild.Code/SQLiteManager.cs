@@ -5,7 +5,7 @@ using System.IO;
 
 class SQLiteManager
 {
-    private readonly int SQLITE_VERSION = 1;
+    private readonly int SQLITE_VERSION = 2;
     private static SQLiteManager ins = null;
     private SQLiteConnection _connection = null;
 
@@ -46,7 +46,7 @@ class SQLiteManager
         }
 
         List<Setting> temp = _connection.Query<Setting>("SELECT * FROM Setting WHERE key = 'Version'");
-        if (temp.Count == 0 || int.Parse(temp[0].value) < SQLITE_VERSION)
+        if (temp.Count == 0)
         {
             _connection.Close();
             if (!Directory.Exists(ApiModel.CQApi.AppDirectory + "Backup/"))
@@ -56,6 +56,18 @@ class SQLiteManager
             _connection.CreateTable<Setting>();
             AddVersion();
             ApiModel.CQLog.Info("数据库版本升级", "数据库结构更新，将在原数据库备份后重新建立数据库……");
+        }
+
+        int versionNow = int.Parse(temp[0].value);
+        if (versionNow < SQLITE_VERSION)
+        {
+            switch (versionNow)
+            {
+                case 1:
+                    _connection.Execute("ALTER TABLE Damage ADD COLUMN troop_operator INTEGER DEFAULT -1");
+                    break;
+            }
+            _connection.Execute("UPDATE Setting SET value = " + SQLITE_VERSION + " WHERE key = 'Version'");
         }
     }
 
@@ -80,7 +92,7 @@ class SQLiteManager
         return output;
     }
 
-    public bool CreateDamage(long group, long qq, int troop, long damage, int frequency, int boss_num)
+    public bool CreateDamage(long group, long qq, int troop, long damage, int frequency, int boss_num, long troop_operator = -1)
     {
         List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE user = ? AND day = ? AND troop = ? AND group_number = ?", qq, GetDay(), troop, group);
         if (temp.Count == 0)
@@ -93,7 +105,8 @@ class SQLiteManager
                 damage = damage,
                 day = GetDay(),
                 frequency = frequency,
-                boss_num = boss_num
+                boss_num = boss_num,
+                troop_operator = troop_operator
             }, "");
             return true;
         }
@@ -141,7 +154,7 @@ class SQLiteManager
         return temp[0].damage;
     }
 
-    //LONG_MIN为新增，其它数值为修改偏移值
+    //返回LONG_MIN为新增，其它数值为修改偏移值
     public long AddDamage(long group, long qq, int troop, long damage, int frequency, int boss_num)
     {
         if (CreateDamage(group, qq, troop, damage, frequency, boss_num)) return long.MinValue;
@@ -158,7 +171,8 @@ class SQLiteManager
             troop = temp[0].troop,
             damage = damage,
             frequency = temp[0].frequency,
-            boss_num = temp[0].boss_num
+            boss_num = temp[0].boss_num,
+            troop_operator = temp[0].troop_operator
         });
         return damage - temp[0].damage;
     }
@@ -244,7 +258,8 @@ class SQLiteManager
         public int frequency { get; set; }
         [NotNull]
         public int boss_num { get; set; }
-    }
+        public long troop_operator { get; set; }
+}
 
     public class SaveLoad
     {

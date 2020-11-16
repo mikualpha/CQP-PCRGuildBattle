@@ -153,7 +153,7 @@ public class Event_GroupMessage : IGroupMessage
             }
 
             if (e.Message.Text.StartsWith("修改伤害 [CQ:at,qq=")) GuildBattle.GetInstance(e.FromGroup.Id).PushDamage(qq, troop_num, damage, true);
-            else GuildBattle.GetInstance(e.FromGroup.Id).PushDamage(qq, troop_num, damage, false);
+            else GuildBattle.GetInstance(e.FromGroup.Id).PushDamage(qq, troop_num, damage, false, e.FromQQ.Id);
             e.Handler = true;
             return;
         }
