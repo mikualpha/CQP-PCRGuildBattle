@@ -205,6 +205,12 @@ class SQLiteManager
         return temp[0].time;
     }
 
+    public List<HelpTroopData> GetHelpTroopNum(long group, int daySize)
+    {
+        List<HelpTroopData> output = _connection.Query<HelpTroopData>("SELECT troop_operator AS qq, COUNT(*) AS count, SUM(damage) AS totalDamage FROM Damage WHERE day >= ? AND group_number = ? AND troop_operator > 0 GROUP BY troop_operator ORDER BY totalDamage DESC", GetDay() - daySize, group);
+        return output;
+    }
+
     public static long GetTimeStamp()
     {
         return (DateTime.Now.ToUniversalTime().Ticks - 621355968000000000) / 10000000;
@@ -273,6 +279,13 @@ class SQLiteManager
         public long day { get; set; }
         [NotNull]
         public long time { get; set; }
+    }
+
+    public class HelpTroopData
+    {
+        public long qq { get; set; }
+        public int count { get; set; }
+        public long totalDamage { get; set; }
     }
 
     public class DayDamage

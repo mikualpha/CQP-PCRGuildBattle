@@ -212,6 +212,24 @@ class GuildBattle
             "\n" + "该BOSS剩余HP: " + bossdata[data.bossNumber - 1].ToString());
     }
 
+    public string GetHelpTroopNum()
+    {
+        List<SQLiteManager.HelpTroopData> helpTroopData = SQLiteManager.GetInstance().GetHelpTroopNum(group, 10);
+        string output = "【代刀数统计(含补刀)】";
+
+        int totalTroop = 0;
+        long allTotalDamage = 0;  // 所有人代刀总伤害
+        foreach (SQLiteManager.HelpTroopData data in helpTroopData)
+        {
+            totalTroop += data.count;
+            allTotalDamage += data.totalDamage;
+            output += "\n" + GetUserName(group, data.qq) + "\t\t" + data.count.ToString() + "刀\t伤害: " + data.totalDamage.ToString();
+        }
+        output += "\n【总代刀数(含补刀)】 " + totalTroop.ToString() + " 刀";
+        output += "\n【代刀总伤害】 " + allTotalDamage.ToString();
+        return output;
+    }
+
     public void AddMessage(long qq, string message)
     {
         if (data.messages.ContainsKey(qq)) RemoveMessage(qq);

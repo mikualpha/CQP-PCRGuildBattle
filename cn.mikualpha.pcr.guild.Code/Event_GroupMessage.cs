@@ -290,6 +290,13 @@ public class Event_GroupMessage : IGroupMessage
             return;
         }
 
+        if (e.Message.Text.Equals("代刀统计") && isAdmin(e))
+        {
+            e.CQApi.SendGroupMessage(e.FromGroup, GuildBattle.GetInstance(e.FromGroup.Id).GetHelpTroopNum());
+            e.Handler = true;
+            return;
+        }
+
         if (e.Message.Text.Equals("查看留言板") || e.Message.Text.Equals("查看留言"))
         {
             string output = "【留言板】";
