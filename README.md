@@ -29,3 +29,5 @@ Redis安装可以参考[这个Repository](https://github.com/tporadowski/redis/r
 [JQuery](https://github.com/jquery/jquery) ([MIT License](https://github.com/jquery/jquery/blob/master/LICENSE.txt))
 
 [TableSort](https://github.com/Mottie/tablesorter) ([MIT License](https://github.com/Mottie/tablesorter/blob/master/README.md))
+
+另外，本Web模块使用了部分[Bigfun](https://www.bigfun.cn/tools/pcrteam/)的API，在此感谢。
