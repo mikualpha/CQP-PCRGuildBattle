@@ -12,6 +12,11 @@ Gitter聊天室：[![Gitter](https://badges.gitter.im/MikuAlphaBot/community.svg
 
 **具体群内指令详情可参考[指令列表](https://docs.qq.com/sheet/DYXBDZ1RmRXdXR0dH?tab=BB08J2)。**
 
+### 附加组件
+![示例图](https://github.com/mikualpha/CQP-PCRGuildBattle/raw/master/preview.png)
+
+为本插件开发了一套Web网页模块，可以在[此分支](https://github.com/mikualpha/CQP-PCRGuildBattle/tree/web)中查看。(默认背景图取自[Pixiv](https://www.pixiv.net/artworks/80851092)，在此感谢)
+
 ### 使用组件
 
 [C# Native SDK](https://github.com/Jie2GG/Native.Csharp.Frame/) ([MIT License](https://github.com/Jie2GG/Native.Csharp.Frame/blob/Final/LICENSE))
