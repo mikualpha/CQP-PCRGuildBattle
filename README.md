@@ -4,10 +4,10 @@
 基于PHP编写和SQLite读取的Web面板(因为起初是自用型所以代码比较乱，见谅)。
 
 ### 环境需求
-- Windows Server (因为mirai-native仅支持Windows，如果有共享SQLite读写的方式也可以在Linux上运行)
-- Nginx / Apache
-- PHP 7.0+ (需要php-curl.dll, php-redis.dll, php-sqlite3.dll三个库)
-- Redis
+- `Windows Server 2012+` (因为`mirai-native`仅支持Windows，如果有共享SQLite读写的方式也可以在Linux上运行)
+- `Nginx / Apache`
+- `PHP 7.0+` (需要`php-curl.dll`, `php-redis.dll`, `php-sqlite3.dll`三个库)
+- `Redis`
 
 Nginx + PHP环境如果安装比较困难可以借助WNMP一键包完成。
 
