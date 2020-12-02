@@ -5,7 +5,7 @@ using System.IO;
 
 class SQLiteManager
 {
-    private readonly int SQLITE_VERSION = 2;
+    private readonly int SQLITE_VERSION = 3;
     private static SQLiteManager ins = null;
     private SQLiteConnection _connection = null;
 
@@ -59,16 +59,23 @@ class SQLiteManager
         }
 
         int versionNow = int.Parse(temp[0].value);
-        if (versionNow < SQLITE_VERSION)
+        while (versionNow < SQLITE_VERSION)
         {
             switch (versionNow)
             {
                 case 1:
                     _connection.Execute("ALTER TABLE Damage ADD COLUMN troop_operator INTEGER DEFAULT -1");
                     break;
+                case 2:
+                    _connection.Execute("ALTER TABLE Damage ADD COLUMN is_last_troop INTEGER DEFAULT 0");
+                    _connection.Execute("UPDATE Damage SET is_last_troop = 1 WHERE id in (SELECT id as local_id FROM Damage WHERE boss_num != (SELECT boss_num FROM Damage WHERE id = local_id + 1))");
+                    _connection.Execute("ALTER TABLE Damage ADD COLUMN is_reimburse INTEGER DEFAULT 0");
+                    _connection.Execute("UPDATE Damage SET is_reimburse = 1 WHERE id in (SELECT local_id FROM (SELECT id AS local_id, group_number AS local_group, user AS local_user, day AS local_day FROM Damage WHERE is_last_troop = 0 AND (SELECT is_last_troop FROM Damage WHERE id < local_id AND group_number = local_group AND day = local_day AND user = local_user AND is_reimburse = 0 ORDER BY id DESC LIMIT 0, 1) = 1))");
+                    break;
             }
-            _connection.Execute("UPDATE Setting SET value = " + SQLITE_VERSION + " WHERE key = 'Version'");
+            ++versionNow;
         }
+        _connection.Execute("UPDATE Setting SET value = " + SQLITE_VERSION + " WHERE key = 'Version'");
     }
 
     public void AddLog(long _group, string _text)
@@ -92,7 +99,7 @@ class SQLiteManager
         return output;
     }
 
-    public bool CreateDamage(long group, long qq, int troop, long damage, int frequency, int boss_num, long troop_operator = -1)
+    public bool CreateDamage(long group, long qq, int troop, long damage, int frequency, int boss_num, long troop_operator = -1, bool is_last_troop = false, bool is_reimburse = false)
     {
         List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE user = ? AND day = ? AND troop = ? AND group_number = ?", qq, GetDay(), troop, group);
         if (temp.Count == 0)
@@ -106,7 +113,9 @@ class SQLiteManager
                 day = GetDay(),
                 frequency = frequency,
                 boss_num = boss_num,
-                troop_operator = troop_operator
+                troop_operator = troop_operator,
+                is_last_troop = (is_last_troop ? 1 : 0),
+                is_reimburse = (is_reimburse ? 1 : 0)
             }, "");
             return true;
         }
@@ -121,7 +130,7 @@ class SQLiteManager
 
     public List<Damage> GetTodayDamages(long group)
     {
-        List<Damage> temp = _connection.Query<Damage>("SELECT id, user, day, COUNT(troop) as troop, SUM(damage) as damage FROM Damage WHERE day = ? AND group_number = ? GROUP BY user", GetDay(), group);
+        List<Damage> temp = _connection.Query<Damage>("SELECT id, user, day, COUNT(troop) as troop, SUM(damage) as damage, SUM(is_reimburse) AS is_reimburse FROM Damage WHERE day = ? AND group_number = ? GROUP BY user", GetDay(), group);
         return temp;
     }
 
@@ -172,7 +181,9 @@ class SQLiteManager
             damage = damage,
             frequency = temp[0].frequency,
             boss_num = temp[0].boss_num,
-            troop_operator = temp[0].troop_operator
+            troop_operator = temp[0].troop_operator,
+            is_last_troop = temp[0].is_last_troop,
+            is_reimburse = temp[0].is_reimburse
         });
         return damage - temp[0].damage;
     }
@@ -207,8 +218,16 @@ class SQLiteManager
 
     public List<HelpTroopData> GetHelpTroopNum(long group, int daySize)
     {
-        List<HelpTroopData> output = _connection.Query<HelpTroopData>("SELECT troop_operator AS qq, COUNT(*) AS count, SUM(damage) AS totalDamage FROM Damage WHERE day >= ? AND group_number = ? AND troop_operator > 0 GROUP BY troop_operator ORDER BY totalDamage DESC", GetDay() - daySize, group);
+        List<HelpTroopData> output = _connection.Query<HelpTroopData>("SELECT troop_operator AS qq, COUNT(*) AS count, SUM(damage) AS totalDamage, SUM(is_reimburse) AS reimburseCount FROM Damage WHERE day >= ? AND group_number = ? AND troop_operator > 0 GROUP BY troop_operator ORDER BY totalDamage DESC", GetDay() - daySize, group);
         return output;
+    }
+
+    public bool IsRemiburseTroopToday(long group, long user)
+    {
+        List<IsReimburseData> temp = _connection.Query<IsReimburseData>("SELECT is_last_troop FROM Damage WHERE group_number = ? AND user = ? AND day = ? ORDER BY id DESC LIMIT 0, 1", group, user, GetDay());
+        if (temp.Count == 0) return false;
+        if (temp[0].is_last_troop == 1) return true;
+        return false;
     }
 
     public static long GetTimeStamp()
@@ -265,7 +284,9 @@ class SQLiteManager
         [NotNull]
         public int boss_num { get; set; }
         public long troop_operator { get; set; }
-}
+        public int is_last_troop { get; set; }
+        public int is_reimburse { get; set; }
+    }
 
     public class SaveLoad
     {
@@ -285,6 +306,7 @@ class SQLiteManager
     {
         public long qq { get; set; }
         public int count { get; set; }
+        public int reimburseCount { get; set; }
         public long totalDamage { get; set; }
     }
 
@@ -307,6 +329,11 @@ class SQLiteManager
     public class TableName
     {
         public string name { get; set; }
+    }
+
+    private class IsReimburseData
+    {
+        public int is_last_troop { get; set; }
     }
 
     public class DamageComparer : IEqualityComparer<Damage>

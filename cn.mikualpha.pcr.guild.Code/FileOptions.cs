@@ -42,6 +42,7 @@ class FileOptions
         fileOptions["Member"] = "0";
         fileOptions["MemberChar"] = "";
         fileOptions["DisableAt"] = "0";
+        fileOptions["DamageLimit"] = "10000000";
         ReadFromFile(path);
     }
 
@@ -62,7 +63,9 @@ class FileOptions
                     "//成员列表，半角逗号分隔，标0为启用标识符模式\r\n" +
                     "Member=0\r\n" +
                     "//是否禁止管理员使用@方式获取数据，1为禁止\r\n" +
-                    "DisableAt=0");
+                    "DisableAt=0\r\n" +
+                    "//伤害上限限制(避免手滑)\r\n" +
+                    "DamageLimit=10000000\r\n");
         writer.Close();
         fs.Close();
         return true;

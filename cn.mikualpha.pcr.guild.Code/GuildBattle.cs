@@ -13,6 +13,8 @@ class GuildBattle
     private static List<long> bossdata = null;
     private List<long> member = null;
     private long group = 0;
+    private static long damageLimit = long.MaxValue;
+    private readonly int MAX_TROOP = 6;
 
     public const int BOSS_MAX = 5;
 
@@ -36,6 +38,16 @@ class GuildBattle
 
     #region 业务接口
     public static string GetSignChar() { return FileOptions.GetInstance().GetOptions()["MemberChar"]; }
+
+    public static long GetDamageLimit()
+    {
+        if (damageLimit != long.MaxValue) return damageLimit;
+
+        long output;
+        if (!long.TryParse(FileOptions.GetInstance().GetOptions()["DamageLimit"], out output)) return long.MaxValue;
+        damageLimit = output;
+        return damageLimit;
+    }
 
     //遗留函数，现在当开关用
     public void SetActive(bool active)
@@ -119,9 +131,15 @@ class GuildBattle
 
     public void PushDamage(long qq, int troop_num, long damage, bool can_modify = false, long troop_operator = -1)
     {
-        if (troop_num > 6 || troop_num < 1)
+        if (troop_num > MAX_TROOP || troop_num < 1)
         {
             ApiModel.CQApi.SendGroupMessage(group, "输入的队伍编号不正确，应为1~3(补刀可填4~6)！");
+            return;
+        }
+
+        if (damage >= GetDamageLimit())
+        {
+            ApiModel.CQApi.SendGroupMessage(group, "输入伤害超出系统限制(" + GetDamageLimit().ToString() + ")！");
             return;
         }
 
@@ -135,7 +153,9 @@ class GuildBattle
         {
             addDamage = SQLiteManager.GetInstance().AddDamage(group, qq, troop_num, Min(damage, bossdata[data.bossNumber - 1] - data.damage), data.frequency, data.bossNumber);
         } else {
-            if (SQLiteManager.GetInstance().CreateDamage(group, qq, troop_num, Min(damage, bossdata[data.bossNumber - 1] - data.damage), data.frequency, data.bossNumber, troop_operator))
+            bool isLastTroop = (damage >= bossdata[data.bossNumber - 1] - data.damage);
+            if (SQLiteManager.GetInstance().CreateDamage(group, qq, troop_num, Min(damage, bossdata[data.bossNumber - 1] - data.damage), 
+                data.frequency, data.bossNumber, troop_operator, isLastTroop, SQLiteManager.GetInstance().IsRemiburseTroopToday(group, qq)))
             {
                 addDamage = long.MinValue;
             } else
@@ -217,15 +237,20 @@ class GuildBattle
         List<SQLiteManager.HelpTroopData> helpTroopData = SQLiteManager.GetInstance().GetHelpTroopNum(group, 10);
         string output = "【代刀数统计(含补刀)】";
 
-        int totalTroop = 0;
+        int totalTroop = 0, totalReimburseTroop = 0;
         long allTotalDamage = 0;  // 所有人代刀总伤害
         foreach (SQLiteManager.HelpTroopData data in helpTroopData)
         {
             totalTroop += data.count;
+            totalReimburseTroop += data.reimburseCount;
             allTotalDamage += data.totalDamage;
-            output += "\n" + GetUserName(group, data.qq) + "\t\t" + data.count.ToString() + "刀\t伤害: " + data.totalDamage.ToString();
+            output += "\n" + GetUserName(group, data.qq) + "\t\t" + (data.count - data.reimburseCount).ToString();
+            if (data.reimburseCount > 0) output += "(+" + data.reimburseCount.ToString() + ")";
+            output += "刀\t伤害: " + data.totalDamage.ToString();
         }
-        output += "\n【总代刀数(含补刀)】 " + totalTroop.ToString() + " 刀";
+        output += "\n【总代刀数(含补刀)】 " + (totalTroop - totalReimburseTroop).ToString();
+        if (totalReimburseTroop > 0) output += "(+" + totalReimburseTroop.ToString() + ")";
+        output += " 刀";
         output += "\n【代刀总伤害】 " + allTotalDamage.ToString();
         return output;
     }
