@@ -1,5 +1,6 @@
 <?php 
 require('functions.php');
+define('SHOW_ZERO_TROOP_DAY', false);
 
 $day = GetDay(START_DATE);
 
@@ -34,7 +35,7 @@ $day = GetDay(START_DATE);
                     <th data-field="QQ">QQ<img src="img/sort.png" /></th>
                     <?php echo SetHeader(20); ?>
                     <th data-field="Total" data-sortable="true">Total<img src="img/sort.png" /></th>
-                    <th data-field="helpday" data-sortable="true">全代刀天数<img src="img/sort.png" /></th>
+                    <?php if ( SHOW_ZERO_TROOP_DAY ) { ?><th data-field="helpday" data-sortable="true">全代刀天数<img src="img/sort.png" /></th><?php } ?>
                 </tr>
             </thead>
             <tbody>
@@ -101,7 +102,7 @@ function PrintTable($offset)
         }
         $totalDamage[$length] += $row['Total'];
         $output .= "\n" . GetChar($offset + 4) . '<td>' . $row['Total'] . '</td>';
-        $output .= "\n" . GetChar($offset + 4) . '<td>' . $helpTroopDays . '</td>';
+        if ( SHOW_ZERO_TROOP_DAY ) $output .= "\n" . GetChar($offset + 4) . '<td>' . $helpTroopDays . '</td>';
         $output .= "\n" . GetChar($offset) . "</tr>";
     }
 
@@ -111,7 +112,7 @@ function PrintTable($offset)
     for ($i = 0; $i < DAY_NUM + 1; ++$i) {
         $output .= "\n" . GetChar($offset + 4) . '<td><b>' . $totalDamage[$i] . '</b></td>';
     }
-    $output .= "\n" . GetChar($offset + 4) . '<td></td>';
+    if ( SHOW_ZERO_TROOP_DAY ) $output .= "\n" . GetChar($offset + 4) . '<td></td>';
     $output .= "\n" . GetChar($offset) . "</tr>";
 
     return $output . "\n";

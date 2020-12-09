@@ -1,9 +1,11 @@
 <?php 
 require('functions.php'); 
-define('MAX_TROOP_NUM', 5);
+define('LAST_TROOP_COLOR', 'royalblue');
+define('REIMBURSE_TROOP_COLOR', 'green');
+define('SHOW_LAST_REIMBURSE_TROOP_NUM', true);
 
-// ini_set("display_errors","On");
-// error_reporting(E_ALL);
+ini_set("display_errors","On");
+error_reporting(E_ALL);
 
 if (isset($_GET['offset'])) $dayOffset = intval($_GET['offset']);
 else $dayOffset = 0;
@@ -37,7 +39,9 @@ $maxTroopNum = GetMaxTroopNum($day);
                     <th data-field="Name">Name<img src="img/sort.png" /></th>
                     <th data-field="QQ">QQ<img src="img/sort.png" /></th>
                     <?php echo SetHeader(20); ?>
-                    <th data-field="Total" data-sortable="true">Total<img src="img/sort.png" /></th>
+                    <?php if ( SHOW_LAST_REIMBURSE_TROOP_NUM ) { ?><th width="120em" data-field="LastTroopNum">尾刀数<img src="img/sort.png" /></th><?php } ?>
+                    <?php if ( SHOW_LAST_REIMBURSE_TROOP_NUM ) { ?><th width="120em" data-field="ReimburseTroopNum">补偿刀数<img src="img/sort.png" /></th><?php } ?>
+                    <th data-field="Total" data-sortable="true">Total<img src="img/sort.png" /></th2
                 </tr>
             </thead>
             <tbody>
@@ -63,6 +67,8 @@ function PrintTable($offset)
     for ($i = 0; $i < $maxTroopNum; ++$i) $sql .= "\n" . '	SUM( CASE troop WHEN ' . ($i + 1) . ' THEN damage ELSE 0 END ) AS Damage' . ($i + 1) . ',';
     for ($i = 0; $i < $maxTroopNum; ++$i) $sql .= "\n" . '	SUM( CASE troop WHEN ' . ($i + 1) . ' THEN frequency ELSE 0 END ) AS Frequency' . ($i + 1) . ',';
     for ($i = 0; $i < $maxTroopNum; ++$i) $sql .= "\n" . '	SUM( CASE troop WHEN ' . ($i + 1) . ' THEN boss_num ELSE 0 END ) AS BossNum' . ($i + 1) . ',';
+    for ($i = 0; $i < $maxTroopNum; ++$i) $sql .= "\n" . '	SUM( CASE troop WHEN ' . ($i + 1) . ' THEN is_last_troop ELSE 0 END ) AS IsLast' . ($i + 1) . ',';
+    for ($i = 0; $i < $maxTroopNum; ++$i) $sql .= "\n" . '	SUM( CASE troop WHEN ' . ($i + 1) . ' THEN is_reimburse ELSE 0 END ) AS IsReimburse' . ($i + 1) . ',';
     $sql .= "\n" . '	SUM( damage ) AS Total';
     $sql .= "\n" . 'FROM';
     $sql .= "\n" . '	Damage';
@@ -75,29 +81,61 @@ function PrintTable($offset)
 
     $ret = $SQLite->query($sql);
 	$totalDamage = 0;
-	$totalCount = 0;
+    $totalCount = 0;
+    $totalLastTroopNum = 0;
+    $totalReimburseTroopNum = 0;
     while ($row = $ret->fetchArray(SQLITE3_ASSOC)) {
+        $lastTroopNum = 0;
+        $reimburseTroopNum = 0;
+
         if ($output != "") $output .= "\n" . GetChar($offset);
         $output .= "<tr>";
         $output .= "\n" . GetChar($offset + 4) . '<td>' . GetUserName($row['user']) . '</td>';
         $output .= "\n" . GetChar($offset + 4) . '<td>' . substr_replace($row['user'], '****', 3, 4) . '</td>';
-        for ($i = 0; $i < count($row) - 2 - $maxTroopNum * 3; ++$i) {
-			if (intval($row['Damage' . ($i + 1)]) > 0) ++$totalCount;
-            $output .= "\n" . GetChar($offset + 4) . '<td title="第' . $row['Frequency' . ($i + 1)] . '周目 ' . $row['BossNum' . ($i + 1)] . '号BOSS">' . $row['Damage' . ($i + 1)];
+        for ($i = 0; $i < count($row) - 2 - $maxTroopNum * 5; ++$i) {
+            if (intval($row['Damage' . ($i + 1)]) > 0 && intval($row['IsReimburse' . ($i + 1)]) == 0) ++$totalCount;
+            if (intval($row['IsLast' . ($i + 1)]) > 0) {
+                ++$lastTroopNum;
+                ++$totalLastTroopNum;
+            }
+            if (intval($row['IsReimburse' . ($i + 1)]) > 0) {
+                ++$reimburseTroopNum;
+                ++$totalReimburseTroopNum;
+            }
+
+            $output .= "\n" . GetChar($offset + 4) . '<td ';
+            if (intval($row['IsLast' . ($i + 1)]) > 0) $output .= 'style="color:' . LAST_TROOP_COLOR . '" ';
+            if (intval($row['IsReimburse' . ($i + 1)]) > 0) $output .= 'style="color:' . REIMBURSE_TROOP_COLOR . '" ';
+            $output .= 'title="第' . $row['Frequency' . ($i + 1)] . '周目 ' . $row['BossNum' . ($i + 1)] . '号BOSS';
+            if (intval($row['IsLast' . ($i + 1)]) > 0) $output .= PHP_EOL . '尾刀';
+            if (intval($row['IsReimburse' . ($i + 1)]) > 0) $output .= PHP_EOL . '补偿刀';
+            $output .= '">' . $row['Damage' . ($i + 1)];
+
             // 代刀记录
             if (array_key_exists($row['ID' . ($i + 1)], $helpTroopList)) {
                 $output .= '<span style="color:red" title="代刀: ' . GetUserName($helpTroopList[$row['ID' . ($i + 1)]]) . '"><b>*</b></span>';
             }
             $output .= '</td>';
-		}
+        }
+        if ( SHOW_LAST_REIMBURSE_TROOP_NUM ) {
+            $output .= "\n" . GetChar($offset + 4) . '<td>' . $lastTroopNum . '</td>';
+            $output .= "\n" . GetChar($offset + 4) . '<td>' . $reimburseTroopNum . '</td>';
+        }
         $output .= "\n" . GetChar($offset + 4) . '<td>' . $row['Total'] . '</td>';
         $output .= "\n" . GetChar($offset) . "</tr>";
 		$totalDamage += intval($row['Total']);
     }
 	$output .= "<tr>";
     $output .= "\n" . GetChar($offset + 4) . '<td><b>合计</b></td>';
-    $output .= "\n" . GetChar($offset + 4) . '<td><b>共' . $totalCount . '刀</b></td>';
-    for ($i = 0; $i < $maxTroopNum; ++$i) {
+    $output .= "\n" . GetChar($offset + 4) . '<td><b>共' . $totalCount . '(+' . $totalReimburseTroopNum . ')刀</b></td>';
+
+    if ($totalLastTroopNum - $totalReimburseTroopNum > 0) {
+        $output .= "\n" . GetChar($offset + 4) . '<td><b>剩余 ' . ($totalLastTroopNum - $totalReimburseTroopNum) . ' 补偿刀</b></td>';
+    } else {
+        $output .= "\n" . GetChar($offset + 4) . '<td></td>';
+    }
+
+    for ($i = 0; $i < $maxTroopNum + 1; ++$i) {
         $output .= "\n" . GetChar($offset + 4) . '<td></td>';
     }
 	$output .= "\n" . GetChar($offset + 4) . '<td><b>' . $totalDamage . '</b></td>';
