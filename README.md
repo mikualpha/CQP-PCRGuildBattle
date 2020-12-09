@@ -1,7 +1,7 @@
 # CQP-PCRGuildBattle Web模块
 公主连接Re:Dive 公会战统计机器人 Web面板模块
 
-基于PHP编写和SQLite读取的Web面板(因为起初是自用型所以代码比较乱，见谅)。
+基于SQLite读取和PHP环境编写的Web面板(因为起初是自用型所以代码比较乱，见谅)。
 
 ### 环境需求
 - `Windows Server 2012+` (因为`mirai-native`仅支持Windows，如果有共享SQLite读写的方式也可以在Linux上运行)
