@@ -65,16 +65,18 @@ class GuildBattle
             "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS] 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString();
     }
 
-    public void AddBattleUser(long qq)
+    public void AddBattleUser(long qq, long helper = 0)
     {
         if (data.battleUser.Contains(qq)) return;
         data.battleUser.Add(qq);
+        //发送代刀消息
+        if (helper > 0) AddHelpInfo(qq, helper);
         SaveData();
 
         long SLTime = GetSLStatus(qq); // SL时间，-1为未SL
         ApiModel.CQApi.SendGroupMessage(group, "战斗状态已记录！目前战斗状态列表：\n" + PrintList(group, GetBattleUser()) + "\n\n" + 
             (data.treeUser.Count == 0 ? "" : "【注意】 目前有 " + data.treeUser.Count.ToString() + " 人正在挂树！\n") +
-            (SLTime == -1 ? "" : "【注意】 您今日已于" + SQLiteManager.ConvertIntDateTime(SLTime) + "(GMT+8) 进行过SL操作！\n") +
+            (SLTime == -1 ? "" : "【注意】 " + (helper > 0 ? "该账号" : "您") + "今日已于" + SQLiteManager.ConvertIntDateTime(SLTime) + "(GMT+8) 进行过SL操作！\n") +
             "第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString()
         );
     }
@@ -98,8 +100,10 @@ class GuildBattle
     {
         if (!data.battleUser.Contains(qq)) return;
         data.battleUser.Remove(qq);
+        RemoveHelpInfo(qq, false); // 移除代刀数据
         SaveData();
         ApiModel.CQApi.SendGroupMessage(group, "已移除战斗状态！目前战斗状态列表：\n" + PrintList(group, GetBattleUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
+
     }
 
     public void AddTreeUser(long qq)
@@ -145,6 +149,7 @@ class GuildBattle
 
         if (data.battleUser.Contains(qq)) data.battleUser.Remove(qq);
         if (data.treeUser.Contains(qq)) data.treeUser.Remove(qq);
+        if (data.helpInfo.ContainsKey(qq)) RemoveHelpInfo(qq, true);
 
         string text = "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS]";
 
@@ -230,6 +235,25 @@ class GuildBattle
         SQLiteManager.GetInstance().AddLog(group, "已将BOSS数据重置为第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS");
         ApiModel.CQApi.SendGroupMessage(group, "已将BOSS数据重置为第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS，对BOSS造成的伤害已重置" +
             "\n" + "该BOSS剩余HP: " + bossdata[data.bossNumber - 1].ToString());
+    }
+
+    private void AddHelpInfo(long account, long helper)
+    {
+        if (!FileOptions.GetInstance().CanHelpSignal()) return;
+
+        data.helpInfo.Add(account, helper);
+        ApiModel.CQApi.SendPrivateMessage(account, "[" + GuildBattle.GetUserName(group, helper) + "] 正在代刀，请注意避免登录冲突导致不必要的损失\n(若未委托他人代刀请联系群管理了解情况)");
+    }
+
+    private void RemoveHelpInfo(long account, bool isSuccess = true)
+    {
+        if (!FileOptions.GetInstance().CanHelpSignal()) return;
+        if (data.helpInfo.ContainsKey(account))
+        {
+            if ( isSuccess ) ApiModel.CQApi.SendPrivateMessage(account, "[" + GuildBattle.GetUserName(group, data.helpInfo[account]) + "] 已完成本次出刀\n(如造成骚扰可屏蔽本窗口对话)");
+            else ApiModel.CQApi.SendPrivateMessage(account, "[" + GuildBattle.GetUserName(group, data.helpInfo[account]) + "] 已取消本次出刀\n(如造成骚扰可屏蔽本窗口对话)");
+            data.helpInfo.Remove(account);
+        }
     }
 
     public string GetHelpTroopNum()
@@ -395,6 +419,7 @@ class GuildBattle
         if (data.treeUser == null) data.treeUser = new List<long>();
         if (data.messages == null) data.messages = new Dictionary<long, string>();
         if (data.subscribe == null) data.subscribe = new Dictionary<long, int>();
+        if (data.helpInfo == null) data.helpInfo = new Dictionary<long, long>();
     }
 
     private void SaveData()
@@ -560,6 +585,7 @@ class GuildBattle
         public List<long> treeUser { get; set; }
         public Dictionary<long, string> messages { get; set; }
         public Dictionary<long, int> subscribe { get; set; }
+        public Dictionary<long, long> helpInfo { get; set; }
     }
 }
 

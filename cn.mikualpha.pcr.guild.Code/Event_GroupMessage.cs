@@ -93,7 +93,7 @@ public class Event_GroupMessage : IGroupMessage
                 return;
             }
 
-            if ((e.Message.Text.StartsWith("他挂树了 [CQ:at,qq=") || e.Message.Text.StartsWith("他挂树了[CQ:at,qq=")) && isAdmin(e))
+            if ((e.Message.Text.StartsWith("他挂树了 [CQ:at,qq=") || e.Message.Text.StartsWith("他挂树了[CQ:at,qq=")))
             {
                 long qq = GetOperateQQ(e.Message.Text);
                 GuildBattle.GetInstance(e.FromGroup.Id).AddTreeUser(qq);
@@ -108,7 +108,15 @@ public class Event_GroupMessage : IGroupMessage
                 return;
             }
 
-            if ((e.Message.Text.StartsWith("取消挂树 [CQ:at,qq=") || e.Message.Text.StartsWith("取消挂树[CQ:at,qq=")) && isAdmin(e))
+            if((e.Message.Text.StartsWith("申请出刀 [CQ:at,qq=") || e.Message.Text.StartsWith("代刀中 [CQ:at,qq=")))
+            {
+                long qq = GetOperateQQ(e.Message.Text);
+                GuildBattle.GetInstance(e.FromGroup.Id).AddBattleUser(qq, e.FromQQ.Id);
+                e.Handler = true;
+                return;
+            }
+
+            if ((e.Message.Text.StartsWith("取消挂树 [CQ:at,qq=") || e.Message.Text.StartsWith("取消挂树[CQ:at,qq=")))
             {
                 long qq = GetOperateQQ(e.Message.Text);
                 GuildBattle.GetInstance(e.FromGroup.Id).RemoveTreeUser(qq);
@@ -116,7 +124,7 @@ public class Event_GroupMessage : IGroupMessage
                 return;
             }
 
-            if ((e.Message.Text.StartsWith("取消出刀 [CQ:at,qq=") || e.Message.Text.StartsWith("取消出刀[CQ:at,qq=")) && isAdmin(e))
+            if ((e.Message.Text.StartsWith("取消出刀 [CQ:at,qq=") || e.Message.Text.StartsWith("取消出刀[CQ:at,qq=")))
             {
                 long qq = GetOperateQQ(e.Message.Text);
                 GuildBattle.GetInstance(e.FromGroup.Id).RemoveBattleUser(qq);
@@ -138,7 +146,7 @@ public class Event_GroupMessage : IGroupMessage
                 return;
             }
 
-            if ((e.Message.Text.StartsWith("伤害 [CQ:at,qq=") || e.Message.Text.StartsWith("修改伤害 [CQ:at,qq=")) && isAdmin(e))
+            if ((e.Message.Text.StartsWith("伤害 [CQ:at,qq=") || e.Message.Text.StartsWith("修改伤害 [CQ:at,qq=")))
             {
                 long qq = GetOperateQQ(e.Message.Text);
 
@@ -222,7 +230,7 @@ public class Event_GroupMessage : IGroupMessage
                 return;
             }
 
-            if (e.Message.Text.StartsWith("今日伤害 [CQ:at,qq=") && isAdmin(e) && !FileOptions.GetInstance().isDisableAt())
+            if (e.Message.Text.StartsWith("今日伤害 [CQ:at,qq=") && isAdmin(e) && !FileOptions.GetInstance().IsDisableAt())
             {
                 long qq = GetOperateQQ(e.Message.Text);
                 e.CQApi.SendPrivateMessage(e.FromQQ.Id, GetTodayDamage(e.FromGroup.Id, qq));
@@ -251,7 +259,7 @@ public class Event_GroupMessage : IGroupMessage
                 return;
             }
 
-            if (e.Message.Text.StartsWith("查看总伤害 [CQ:at,qq=") && isAdmin(e) && !FileOptions.GetInstance().isDisableAt())
+            if (e.Message.Text.StartsWith("查看总伤害 [CQ:at,qq=") && isAdmin(e) && !FileOptions.GetInstance().IsDisableAt())
             {
                 long qq = GetOperateQQ(e.Message.Text);
                 e.CQApi.SendPrivateMessage(e.FromQQ.Id, GetRecentDaysDamages(e.FromGroup.Id, qq));
@@ -409,7 +417,7 @@ public class Event_GroupMessage : IGroupMessage
                 return;
             }
 
-            if (e.Message.Text.ToUpper().Equals("申请SL") || (e.Message.Text.ToUpper().StartsWith("申请SL [CQ:at,qq=", true, null) && isAdmin(e)))
+            if (e.Message.Text.ToUpper().Equals("申请SL") || e.Message.Text.ToUpper().StartsWith("申请SL [CQ:at,qq=", true, null))
             {
                 long qq = e.FromQQ.Id;
                 if (e.Message.Text.ToUpper().StartsWith("申请SL [CQ:at,qq=", true, null))
@@ -428,7 +436,7 @@ public class Event_GroupMessage : IGroupMessage
                 return;
             }
 
-            if (e.Message.Text.ToUpper().Equals("撤销SL") || (e.Message.Text.ToUpper().StartsWith("撤销SL [CQ:at,qq=", true, null) && isAdmin(e)))
+            if (e.Message.Text.ToUpper().Equals("撤销SL") || e.Message.Text.ToUpper().StartsWith("撤销SL [CQ:at,qq=", true, null))
             {
                 long qq = e.FromQQ.Id;
                 if (e.Message.Text.ToUpper().StartsWith("撤销SL [CQ:at,qq=", true, null))
@@ -447,7 +455,7 @@ public class Event_GroupMessage : IGroupMessage
                 return;
             }
 
-            if (e.Message.Text.ToUpper().Equals("查询SL") || (e.Message.Text.ToUpper().StartsWith("查询SL [CQ:at,qq=", true, null) && isAdmin(e)))
+            if (e.Message.Text.ToUpper().Equals("查询SL") || e.Message.Text.ToUpper().StartsWith("查询SL [CQ:at,qq=", true, null))
             {
                 long qq = e.FromQQ.Id;
                 if (e.Message.Text.ToUpper().StartsWith("查询SL [CQ:at,qq=", true, null))

@@ -28,9 +28,14 @@ class FileOptions
 
     public Dictionary<string, string> GetOptions() { return fileOptions; }
 
-    public bool isDisableAt()
+    public bool IsDisableAt()
     {
         return fileOptions["DisableAt"] == "1";
+    }
+
+    public bool CanHelpSignal()
+    {
+        return fileOptions["HelpSignal"] == "1";
     }
 
     private void initalizeOptions()
@@ -43,6 +48,7 @@ class FileOptions
         fileOptions["MemberChar"] = "";
         fileOptions["DisableAt"] = "0";
         fileOptions["DamageLimit"] = "10000000";
+        fileOptions["HelpSignal"] = "0";
         ReadFromFile(path);
     }
 
@@ -62,10 +68,12 @@ class FileOptions
                     "MemberChar=*\r\n" +
                     "//成员列表，半角逗号分隔，标0为启用标识符模式\r\n" +
                     "Member=0\r\n" +
-                    "//是否禁止管理员使用@方式获取数据，1为禁止\r\n" +
+                    "//是否禁止管理员使用@方式获取数据，1为禁止(弃用)\r\n" +
                     "DisableAt=0\r\n" +
                     "//伤害上限限制(避免手滑)\r\n" +
-                    "DamageLimit=10000000\r\n");
+                    "DamageLimit=10000000\r\n" + 
+                    "//是否进行代刀提醒(私聊账号所有者以防止重复登录)，1为启用\r\n" +
+                    "HelpSignal=0");
         writer.Close();
         fs.Close();
         return true;
