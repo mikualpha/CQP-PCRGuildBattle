@@ -26,6 +26,7 @@ else $dayOffset = 0;
         <table id="stat" class="table table-hover table-striped tablesorter" data-sort-name="Total" data-sort-order="desc">
             <?php echo PrintTable(16); ?>
         </table>
+        <?php echo PrintCopyRight(); ?>
     </div>
 </body>
 

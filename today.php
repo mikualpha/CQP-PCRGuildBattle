@@ -48,6 +48,7 @@ $maxTroopNum = GetMaxTroopNum($day);
                 <?php echo PrintTable(16); ?>
             </tbody>
         </table>
+        <?php echo PrintCopyRight(); ?>
     </div>
 </body>
 

@@ -1,6 +1,7 @@
 <?php 
 require('functions.php');
 define('SHOW_ZERO_TROOP_DAY', false);
+define('SHOW_BE_HELPED_TROOP', true);
 
 $day = GetDay(START_DATE);
 
@@ -35,13 +36,15 @@ $day = GetDay(START_DATE);
                     <th data-field="QQ">QQ<img src="img/sort.png" /></th>
                     <?php echo SetHeader(20); ?>
                     <th data-field="Total" data-sortable="true">Total<img src="img/sort.png" /></th>
-                    <?php if ( SHOW_ZERO_TROOP_DAY ) { ?><th data-field="helpday" data-sortable="true">全代刀天数<img src="img/sort.png" /></th><?php } ?>
+                    <?php if ( SHOW_ZERO_TROOP_DAY ) { ?><th data-field="HelpDay" data-sortable="true">全代刀天数<img src="img/sort.png" /></th><?php } ?>
+                    <?php if ( SHOW_BE_HELPED_TROOP ) { ?><th data-field="BeHelpedTroopNum" data-sortable="true">被代刀数<img src="img/sort.png" /></th><?php } ?>
                 </tr>
             </thead>
             <tbody>
                 <?php echo PrintTable(16); ?>
             </tbody>
         </table>
+        <?php echo PrintCopyRight(); ?>
     </div>
 </body>
 
@@ -58,6 +61,7 @@ function PrintTable($offset)
     $sql = 'SELECT';
     $sql .= "\n" . '	user,';
     for ($i = 0; $i < DAY_NUM; ++$i) $sql .= "\n" . '	SUM( CASE day WHEN ' . ($day + $i) . ' THEN damage ELSE 0 END ) AS Day' . ($i + 1) . ',';
+    $sql .= "\n" . '	SUM( CASE WHEN troop_operator > 0 AND is_reimburse = 0 THEN 1 ELSE 0 END )  AS BeHelpedTroopNum,';
     $sql .= "\n" . '	SUM( damage ) AS Total';
     $sql .= "\n" . 'FROM';
     $sql .= "\n" . '	Damage ';
@@ -77,6 +81,7 @@ function PrintTable($offset)
         }
 
         $helpTroopDays = 0; # 一刀未出天数
+        $
 
         $output .= "<tr>";
         $output .= "\n" . GetChar($offset + 4) . '<td>' . GetUserName($row['user']) . '</td>';
@@ -103,6 +108,7 @@ function PrintTable($offset)
         $totalDamage[$length] += $row['Total'];
         $output .= "\n" . GetChar($offset + 4) . '<td>' . $row['Total'] . '</td>';
         if ( SHOW_ZERO_TROOP_DAY ) $output .= "\n" . GetChar($offset + 4) . '<td>' . $helpTroopDays . '</td>';
+        if ( SHOW_BE_HELPED_TROOP ) $output .= "\n" . GetChar($offset + 4) . '<td>' . $row['BeHelpedTroopNum'] . '</td>';
         $output .= "\n" . GetChar($offset) . "</tr>";
     }
 
@@ -113,6 +119,7 @@ function PrintTable($offset)
         $output .= "\n" . GetChar($offset + 4) . '<td><b>' . $totalDamage[$i] . '</b></td>';
     }
     if ( SHOW_ZERO_TROOP_DAY ) $output .= "\n" . GetChar($offset + 4) . '<td></td>';
+    if ( SHOW_BE_HELPED_TROOP ) $output .= "\n" . GetChar($offset + 4) . '<td></td>';
     $output .= "\n" . GetChar($offset) . "</tr>";
 
     return $output . "\n";

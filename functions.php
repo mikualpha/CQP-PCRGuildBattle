@@ -195,4 +195,8 @@ function GetDayRank($year, $month, $day, $hour, $minute, $battle_id, $start_page
         return GetDayRank($year, $month, $day, $hour, $minute, $battle_id, $start_page + 1);
     }
 }
+
+function PrintCopyRight() {
+    echo '<div style="text-align: center; font-size: 10pt">Copyright © 2020-' . date('Y') . ' MikuAlpha All Rights Reserved.</div>';
+}
 ?>
