@@ -242,7 +242,7 @@ class GuildBattle
         if (!FileOptions.GetInstance().CanHelpSignal()) return;
 
         data.helpInfo.Add(account, helper);
-        ApiModel.CQApi.SendPrivateMessage(account, "[" + GuildBattle.GetUserName(group, helper) + "] 正在代刀，请注意避免登录冲突导致不必要的损失\n(若未委托他人代刀请联系群管理了解情况)");
+        ApiModel.CQApi.SendPrivateMessage(account, "[" + GuildBattle.GetUserName(group, helper) + "] 代刀中，请注意避免重复登录导致不必要的损失");
     }
 
     private void RemoveHelpInfo(long account, bool isSuccess = true)
