@@ -42,7 +42,7 @@ class SQLiteManager
     {
         if (_connection.Query<TableName>("SELECT * FROM SQLITE_MASTER WHERE type= 'table' AND name = 'Setting'").Count == 0)
         {
-            _connection.CreateTable<Setting>(); //偷个懒
+            _connection.CreateTable<Setting>(); // 偷个懒
         }
 
         List<Setting> temp = _connection.Query<Setting>("SELECT * FROM Setting WHERE key = 'Version'");

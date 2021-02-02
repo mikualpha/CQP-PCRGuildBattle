@@ -38,6 +38,7 @@ public class Event_GroupMessage : IGroupMessage
                 return;
             }
 
+            // 未启用公会战工具时，拦截以下指令
             if (!GuildBattle.GetInstance(e.FromGroup.Id).GetActive())
             {
                 e.Handler = false;
@@ -52,6 +53,20 @@ public class Event_GroupMessage : IGroupMessage
                     GuildBattle.GetInstance(e.FromGroup.Id).SetActive(false);
                     e.CQApi.SendGroupMessage(e.FromGroup.Id, "已成功禁用！");
                 }
+                e.Handler = true;
+                return;
+            }
+
+            if (e.Message.Text.Contains("#重置公会战数据") && isAdmin(e))
+            {
+                // 重置BOSS
+                GuildBattle.GetInstance(e.FromGroup.Id).SetFrequency(1, 1);
+                // 清空出刀
+                GuildBattle.GetInstance(e.FromGroup.Id).ClearBattleUser();
+                // 清空留言
+                GuildBattle.GetInstance(e.FromGroup.Id).ClearMessage();
+                // 清空预约
+                GuildBattle.GetInstance(e.FromGroup.Id).ClearSubscribe();
                 e.Handler = true;
                 return;
             }
@@ -219,6 +234,7 @@ public class Event_GroupMessage : IGroupMessage
             if (e.Message.Text.Equals("清空出刀") && isAdmin(e))
             {
                 GuildBattle.GetInstance(e.FromGroup.Id).ClearBattleUser();
+                e.CQApi.SendGroupMessage(e.FromGroup.Id, "战斗列表已清空！");
                 e.Handler = true;
                 return;
             }
@@ -226,6 +242,7 @@ public class Event_GroupMessage : IGroupMessage
             if (e.Message.Text.Equals("清空挂树") && isAdmin(e))
             {
                 GuildBattle.GetInstance(e.FromGroup.Id).ClearTreeUser();
+                e.CQApi.SendGroupMessage(e.FromGroup.Id, "挂树列表已清空！");
                 e.Handler = true;
                 return;
             }

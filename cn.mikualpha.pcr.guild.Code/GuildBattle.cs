@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 class GuildBattle
@@ -85,13 +86,11 @@ class GuildBattle
         data.battleUser.Clear();
         data.treeUser.Clear();
         SaveData();
-        ApiModel.CQApi.SendGroupMessage(group, "战斗列表已清空！");
     }
 
     public void ClearTreeUser() {
         data.treeUser.Clear();
         SaveData();
-        ApiModel.CQApi.SendGroupMessage(group, "挂树列表已清空！");
     }
 
     public List<long> GetBattleUser() { return data.battleUser; }
@@ -151,8 +150,6 @@ class GuildBattle
         if (data.treeUser.Contains(qq)) data.treeUser.Remove(qq);
         if (data.helpInfo.ContainsKey(qq)) RemoveHelpInfo(qq, true);
 
-        string text = "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS]";
-
         long addDamage;
         if (can_modify)
         {
@@ -169,17 +166,23 @@ class GuildBattle
             }
         }
 
-        if (addDamage == long.MinValue)
+        string text = "";
+
+        if (addDamage == long.MinValue) // 新增伤害
         {
+            data.allDamage += Min(damage, bossdata[data.bossNumber - 1] - data.damage);
             data.damage += damage;
             SQLiteManager.GetInstance().AddLog(group, "[" + GetUserName(group, qq) + "] 的第" + troop_num.ToString() + "队对第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS造成了" + damage.ToString() + "伤害");
-
+            
+            text += "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS]";
             text += "\n" + "[" + GetUserName(group, qq) + "] 的第" + troop_num.ToString() + "队共造成了" + damage.ToString() + "伤害";
-        } else if (addDamage != 0)
+        } else if (addDamage != 0) // 修改伤害
         {
-            data.damage += addDamage;
+            data.allDamage += addDamage;
+            CaculateFrequency();
             SQLiteManager.GetInstance().AddLog(group, "[" + GetUserName(group, qq) + "] 将第" + troop_num.ToString() + "队造成的伤害由" + (damage - addDamage).ToString() + "修改为" + damage.ToString());
 
+            text += "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS]";
             text += "\n" + "[" + GetUserName(group, qq) + "] 将第" + troop_num.ToString() + "队造成的伤害由" + (damage - addDamage).ToString() + "修改为" + damage.ToString();
         } else
         {
@@ -211,7 +214,7 @@ class GuildBattle
             
         } else
         {
-            text += "\n" + "该BOSS剩余血量: " + (bossdata[data.bossNumber - 1] - data.damage).ToString();
+            text += "\n" + "当前BOSS剩余血量: " + (bossdata[data.bossNumber - 1] - data.damage).ToString();
             ApiModel.CQApi.SendGroupMessage(group, text);
         }
         SaveData();
@@ -220,6 +223,7 @@ class GuildBattle
     public void SetDamage(long lessBlood)
     {
         data.damage = bossdata[data.bossNumber - 1] - lessBlood;
+        CaculateAllDamage();
         SaveData();
         SQLiteManager.GetInstance().AddLog(group, "已将BOSS剩余血量重置为 " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
         ApiModel.CQApi.SendGroupMessage(group, "已将BOSS血量数据重置！" +
@@ -231,6 +235,7 @@ class GuildBattle
         data.frequency = frequency;
         data.bossNumber = boss_num;
         data.damage = 0;
+        CaculateAllDamage();
         SaveData();
         SQLiteManager.GetInstance().AddLog(group, "已将BOSS数据重置为第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS");
         ApiModel.CQApi.SendGroupMessage(group, "已将BOSS数据重置为第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS，对BOSS造成的伤害已重置" +
@@ -368,6 +373,44 @@ class GuildBattle
         return true;
     }
 
+    // 根据总伤害计算BOSS计数和血量
+    private void CaculateFrequency()
+    {
+        long damageAll = data.allDamage;
+        long singleFrequencyDamage = bossdata.Sum();
+
+        data.frequency = (int)(damageAll / singleFrequencyDamage) + 1;
+        damageAll %= singleFrequencyDamage;
+
+        for (int i = 0; i < bossdata.Count; ++i)
+        {
+            if (damageAll < bossdata[i])
+            {
+                data.bossNumber = i + 1;
+                data.damage = damageAll;
+                return;
+            }
+
+            damageAll -= bossdata[i];
+        }
+    }
+
+    // 计算总伤害
+    private void CaculateAllDamage()
+    {
+        long singleFrequencyDamage = bossdata.Sum();
+        long damageAll = 0;
+
+        damageAll = (data.frequency - 1) * singleFrequencyDamage;
+        for (int i = 0; i < data.bossNumber - 1; ++i)
+        {
+            damageAll += bossdata[i];
+        }
+
+        damageAll += data.damage;
+        data.allDamage = damageAll;
+    }
+
     public long GetSLStatus(long qq)
     {
         return SQLiteManager.GetInstance().GetSL(group, qq);
@@ -413,6 +456,7 @@ class GuildBattle
             data.frequency = 1;
             data.bossNumber = 1;
             data.damage = 0;
+            data.allDamage = 0;
         }
 
         if (data.battleUser == null) data.battleUser = new List<long>();
@@ -580,7 +624,8 @@ class GuildBattle
         public bool isActive { get; set; }
         public int frequency { get; set; }
         public int bossNumber { get; set; }
-        public long damage { get; set; }
+        public long damage { get; set; }  // 对当前BOSS造成的伤害
+        public long allDamage { get; set; }  // 对所有BOSS造成的伤害总和
         public List<long> battleUser { get; set; }
         public List<long> treeUser { get; set; }
         public Dictionary<long, string> messages { get; set; }
