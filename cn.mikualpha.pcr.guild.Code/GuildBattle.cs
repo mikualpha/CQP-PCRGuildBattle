@@ -186,8 +186,8 @@ class GuildBattle
             text += "\n" + "[" + GetUserName(group, qq) + "] 将第" + troop_num.ToString() + "队造成的伤害由" + (damage - addDamage).ToString() + "修改为" + damage.ToString();
         } else
         {
-            if (can_modify) text += "\n" + "您本次的伤害数据已经被正确记录！该指令无效！";
-            else text += "\n" + "您本队伍的伤害数据已有记录！该指令无效！";
+            if (can_modify) text += "您本次的伤害数据已经被正确记录！该指令无效！";
+            else text += "您本队伍的伤害数据已有记录！该指令无效！";
         }
         
         if (data.damage >= bossdata[data.bossNumber - 1])
@@ -506,6 +506,7 @@ class GuildBattle
 
     private void InitBossData()
     {
+        if (bossdata.Count > 0) return;
         bossdata.Add(6000000);
         bossdata.Add(8000000);
         bossdata.Add(10000000);

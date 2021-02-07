@@ -6,6 +6,7 @@ using System.IO;
 class SQLiteManager
 {
     private readonly int SQLITE_VERSION = 3;
+    private readonly int REMOVE_TROOP_LIMIT = 5; // 最大回溯伤害数量
     private static SQLiteManager ins = null;
     private SQLiteConnection _connection = null;
 
@@ -186,6 +187,25 @@ class SQLiteManager
             is_reimburse = temp[0].is_reimburse
         });
         return damage - temp[0].damage;
+    }
+
+    // 删除伤害
+    public List<Damage> RemoveDamage(long group, long qq, int troop)
+    {
+        List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE day = ? AND group_number = ? ORDER BY id DESC LIMIT ?", GetDay(), group, REMOVE_TROOP_LIMIT);
+        List<Damage> output = new List<Damage>();
+        foreach (Damage d in temp)
+        {
+            if (d.user == qq && d.troop == troop)
+            {
+                output.Add(d);
+                _connection.Execute("DELETE FROM Damage WHERE day = ? AND group_number = ? AND id >= ?", GetDay(), group, d.id);
+                return output;
+            }
+            output.Add(d);
+        }
+        output.Clear();
+        return output;
     }
 
     public void SetSL(long group, long qq)
