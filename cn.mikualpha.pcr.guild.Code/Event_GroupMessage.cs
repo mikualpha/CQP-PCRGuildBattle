@@ -142,7 +142,7 @@ public class Event_GroupMessage : IGroupMessage
             if ((e.Message.Text.StartsWith("取消出刀 [CQ:at,qq=") || e.Message.Text.StartsWith("取消出刀[CQ:at,qq=")))
             {
                 long qq = GetOperateQQ(e.Message.Text);
-                GuildBattle.GetInstance(e.FromGroup.Id).RemoveBattleUser(qq);
+                GuildBattle.GetInstance(e.FromGroup.Id).RemoveBattleUser(qq, e.FromQQ.Id);
                 e.Handler = true;
                 return;
             }
@@ -156,7 +156,7 @@ public class Event_GroupMessage : IGroupMessage
 
             if (e.Message.Text.Equals("取消出刀"))
             {
-                GuildBattle.GetInstance(e.FromGroup.Id).RemoveBattleUser(e.FromQQ.Id);
+                GuildBattle.GetInstance(e.FromGroup.Id).RemoveBattleUser(e.FromQQ.Id, e.FromQQ.Id);
                 e.Handler = true;
                 return;
             }

@@ -63,7 +63,7 @@ class GuildBattle
     public string GetBossStatus() {
         return "【公会战BOSS状态】\n" +
             (data.treeUser.Count == 0 ? "" : "【注意】 目前有 " + data.treeUser.Count.ToString() + " 人正在挂树！\n") +
-            "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS] 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString();
+            "[第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS] 剩余HP: " + GetBossLessDamage().ToString();
     }
 
     public void AddBattleUser(long qq, long helper = 0)
@@ -71,14 +71,14 @@ class GuildBattle
         if (data.battleUser.Contains(qq)) return;
         data.battleUser.Add(qq);
         //发送代刀消息
-        if (helper > 0) AddHelpInfo(qq, helper);
+        if (helper > 0) SendHelpTroopMessage(qq, helper);
         SaveData();
 
         long SLTime = GetSLStatus(qq); // SL时间，-1为未SL
         ApiModel.CQApi.SendGroupMessage(group, "战斗状态已记录！目前战斗状态列表：\n" + PrintList(group, GetBattleUser()) + "\n\n" + 
             (data.treeUser.Count == 0 ? "" : "【注意】 目前有 " + data.treeUser.Count.ToString() + " 人正在挂树！\n") +
             (SLTime == -1 ? "" : "【注意】 " + (helper > 0 ? "该账号" : "您") + "今日已于" + SQLiteManager.ConvertIntDateTime(SLTime) + "(GMT+8) 进行过SL操作！\n") +
-            "第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString()
+            "第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + GetBossLessDamage().ToString()
         );
     }
 
@@ -95,13 +95,13 @@ class GuildBattle
 
     public List<long> GetBattleUser() { return data.battleUser; }
 
-    public void RemoveBattleUser(long qq)
+    public void RemoveBattleUser(long qq, long helper = -1)
     {
         if (!data.battleUser.Contains(qq)) return;
         data.battleUser.Remove(qq);
-        RemoveHelpInfo(qq, false); // 移除代刀数据
+        SendHelpTroopEndMessage(qq, helper);
         SaveData();
-        ApiModel.CQApi.SendGroupMessage(group, "已移除战斗状态！目前战斗状态列表：\n" + PrintList(group, GetBattleUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
+        ApiModel.CQApi.SendGroupMessage(group, "已移除战斗状态！目前战斗状态列表：\n" + PrintList(group, GetBattleUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + GetBossLessDamage().ToString());
 
     }
 
@@ -116,7 +116,7 @@ class GuildBattle
         data.treeUser.Add(qq);
         SaveData();
         SQLiteManager.GetInstance().AddLog(group, "[" + GetUserName(group, qq) + "] 挂在树上了...");
-        string outputStr = "挂树状态已记录！目前挂树状态列表：\n" + PrintList(group, GetTreeUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString();
+        string outputStr = "挂树状态已记录！目前挂树状态列表：\n" + PrintList(group, GetTreeUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + GetBossLessDamage().ToString();
         string treeAdminStr = GetTreeAdminStr();
         if (treeAdminStr != "") outputStr += "\n" + treeAdminStr + "快组织救人啦！";
         ApiModel.CQApi.SendGroupMessage(group, outputStr);
@@ -129,7 +129,7 @@ class GuildBattle
         if (!data.treeUser.Contains(qq)) return;
         data.treeUser.Remove(qq);
         SaveData();
-        ApiModel.CQApi.SendGroupMessage(group, "已移除挂树状态！目前挂树状态列表：\n" + PrintList(group, GetTreeUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
+        ApiModel.CQApi.SendGroupMessage(group, "已移除挂树状态！目前挂树状态列表：\n" + PrintList(group, GetTreeUser()) + "\n\n第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS 剩余HP: " + GetBossLessDamage().ToString());
     }
 
     public void PushDamage(long qq, int troop_num, long damage, bool can_modify = false, long troop_operator = -1)
@@ -148,15 +148,17 @@ class GuildBattle
 
         if (data.battleUser.Contains(qq)) data.battleUser.Remove(qq);
         if (data.treeUser.Contains(qq)) data.treeUser.Remove(qq);
-        if (data.helpInfo.ContainsKey(qq)) RemoveHelpInfo(qq, true);
+        if (FileOptions.GetInstance().CanHelpSignal() && troop_operator > 0) SendHelpTroopEndMessage(qq, troop_operator);
 
         long addDamage;
         if (can_modify)
         {
-            addDamage = SQLiteManager.GetInstance().AddDamage(group, qq, troop_num, Min(damage, bossdata[data.bossNumber - 1] - data.damage), data.frequency, data.bossNumber);
-        } else {
-            bool isLastTroop = (damage >= bossdata[data.bossNumber - 1] - data.damage);
-            if (SQLiteManager.GetInstance().CreateDamage(group, qq, troop_num, Min(damage, bossdata[data.bossNumber - 1] - data.damage), 
+            addDamage = SQLiteManager.GetInstance().ModifyDamage(group, qq, troop_num, damage, GetBossLessDamage(), data.frequency, data.bossNumber);
+        }
+        else
+        {
+            bool isLastTroop = (damage >= GetBossLessDamage());
+            if (SQLiteManager.GetInstance().CreateDamage(group, qq, troop_num, Min(damage, GetBossLessDamage()), 
                 data.frequency, data.bossNumber, troop_operator, isLastTroop, SQLiteManager.GetInstance().IsRemiburseTroopToday(group, qq)))
             {
                 addDamage = long.MinValue;
@@ -170,7 +172,7 @@ class GuildBattle
 
         if (addDamage == long.MinValue) // 新增伤害
         {
-            data.allDamage += Min(damage, bossdata[data.bossNumber - 1] - data.damage);
+            data.allDamage += Min(damage, GetBossLessDamage());
             data.damage += damage;
             SQLiteManager.GetInstance().AddLog(group, "[" + GetUserName(group, qq) + "] 的第" + troop_num.ToString() + "队对第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS造成了" + damage.ToString() + "伤害");
             
@@ -203,7 +205,7 @@ class GuildBattle
                 data.frequency += 1;
             }
             text += "\n" + "该BOSS已被击败，下一个BOSS为:" +
-                "\n" + "第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS HP: " + bossdata[data.bossNumber - 1].ToString();
+                "\n" + "第" + data.frequency.ToString() + "周目 " + data.bossNumber.ToString() + "号BOSS HP: " + GetBossLessDamage().ToString();
             ApiModel.CQApi.SendGroupMessage(group, text);
 
             string atStr = GetSubscribeStr(data.bossNumber);
@@ -214,7 +216,7 @@ class GuildBattle
             
         } else
         {
-            text += "\n" + "当前BOSS剩余血量: " + (bossdata[data.bossNumber - 1] - data.damage).ToString();
+            text += "\n" + "当前BOSS剩余血量: " + GetBossLessDamage().ToString();
             ApiModel.CQApi.SendGroupMessage(group, text);
         }
         SaveData();
@@ -225,9 +227,9 @@ class GuildBattle
         data.damage = bossdata[data.bossNumber - 1] - lessBlood;
         CaculateAllDamage();
         SaveData();
-        SQLiteManager.GetInstance().AddLog(group, "已将BOSS剩余血量重置为 " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
+        SQLiteManager.GetInstance().AddLog(group, "已将BOSS剩余血量重置为 " + GetBossLessDamage().ToString());
         ApiModel.CQApi.SendGroupMessage(group, "已将BOSS血量数据重置！" +
-            "\n" + "该BOSS剩余HP: " + (bossdata[data.bossNumber - 1] - data.damage).ToString());
+            "\n" + "该BOSS剩余HP: " + GetBossLessDamage().ToString());
     }
 
     public void SetFrequency(int frequency, int boss_num)
@@ -242,23 +244,18 @@ class GuildBattle
             "\n" + "该BOSS剩余HP: " + bossdata[data.bossNumber - 1].ToString());
     }
 
-    private void AddHelpInfo(long account, long helper)
+    private void SendHelpTroopMessage(long account, long helper)
     {
         if (!FileOptions.GetInstance().CanHelpSignal()) return;
-
-        data.helpInfo.Add(account, helper);
         ApiModel.CQApi.SendPrivateMessage(account, "[" + GuildBattle.GetUserName(group, helper) + "] 代刀中，请注意避免重复登录导致不必要的损失");
     }
 
-    private void RemoveHelpInfo(long account, bool isSuccess = true)
+    private void SendHelpTroopEndMessage(long account, long helper, bool isSuccess = true)
     {
         if (!FileOptions.GetInstance().CanHelpSignal()) return;
-        if (data.helpInfo.ContainsKey(account))
-        {
-            if ( isSuccess ) ApiModel.CQApi.SendPrivateMessage(account, "[" + GuildBattle.GetUserName(group, data.helpInfo[account]) + "] 已完成本次出刀\n(如造成骚扰可屏蔽本窗口对话)");
-            else ApiModel.CQApi.SendPrivateMessage(account, "[" + GuildBattle.GetUserName(group, data.helpInfo[account]) + "] 已取消本次出刀\n(如造成骚扰可屏蔽本窗口对话)");
-            data.helpInfo.Remove(account);
-        }
+
+        if ( isSuccess ) ApiModel.CQApi.SendPrivateMessage(account, "[" + GuildBattle.GetUserName(group, helper) + "] 已完成本次出刀\n(如造成骚扰可屏蔽本窗口对话)");
+        else ApiModel.CQApi.SendPrivateMessage(account, "[" + GuildBattle.GetUserName(group, helper) + "] 已取消本次出刀\n(如造成骚扰可屏蔽本窗口对话)");
     }
 
     public string GetHelpTroopNum()
@@ -282,6 +279,11 @@ class GuildBattle
         output += " 刀";
         output += "\n【代刀总伤害】 " + allTotalDamage.ToString();
         return output;
+    }
+
+    public long GetBossLessDamage()
+    {
+        return bossdata[data.bossNumber - 1] - data.damage;
     }
 
     public void AddMessage(long qq, string message)
@@ -463,7 +465,6 @@ class GuildBattle
         if (data.treeUser == null) data.treeUser = new List<long>();
         if (data.messages == null) data.messages = new Dictionary<long, string>();
         if (data.subscribe == null) data.subscribe = new Dictionary<long, int>();
-        if (data.helpInfo == null) data.helpInfo = new Dictionary<long, long>();
     }
 
     private void SaveData()
@@ -631,7 +632,6 @@ class GuildBattle
         public List<long> treeUser { get; set; }
         public Dictionary<long, string> messages { get; set; }
         public Dictionary<long, int> subscribe { get; set; }
-        public Dictionary<long, long> helpInfo { get; set; }
     }
 }
 

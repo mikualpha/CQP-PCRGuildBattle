@@ -165,12 +165,14 @@ class SQLiteManager
     }
 
     //返回LONG_MIN为新增，其它数值为修改偏移值
-    public long AddDamage(long group, long qq, int troop, long damage, int frequency, int boss_num)
+    public long ModifyDamage(long group, long qq, int troop, long damage, long bossLessDamage, int frequency, int boss_num)
     {
         if (CreateDamage(group, qq, troop, damage, frequency, boss_num)) return long.MinValue;
 
         List<Damage> temp = _connection.Query<Damage>("SELECT * FROM Damage WHERE user = ? AND day = ? AND troop = ? AND group_number = ?", qq, GetDay(), troop, group);
         if (temp[0].damage == damage) return 0;
+
+        damage = Min(damage, bossLessDamage + temp[0].damage);
 
         _connection.Update(new Damage()
         {
@@ -272,6 +274,11 @@ class SQLiteManager
         DateTime startTime = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1));
         time = startTime.AddSeconds(d);
         return time.ToLocalTime().ToString();
+    }
+
+    private long Min(long a, long b)
+    {
+        return (a > b ? b : a);
     }
 
     protected class Log
