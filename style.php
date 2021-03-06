@@ -17,6 +17,17 @@
             margin: 0;
         }
 
+        .page-title {
+            text-align: center;
+            margin-bottom: 2%;
+        }
+
+        .page-title-mobile {
+            text-align: center;
+            margin-top: 4%;
+            margin-bottom: 2%;
+        }
+
         .container-pc {
             background-color: rgba(255, 255, 255, 0.75);
             border-radius: 10px;
@@ -61,6 +72,10 @@
             size: 50%;
             margin-left: 5px;
         }
+
+        .hide {
+            display: none;
+        }
     </style>
 
 
@@ -68,9 +83,16 @@
         window.onload = function() {
             $("#stat").tablesorter();
             if (document.documentElement.clientWidth < 1000) {
-                document.getElementById("container").className = "container-mobile";
+                document.getElementById('container').className = "container-mobile";
+                document.getElementById('page-title').className = "page-title-mobile";
+                if (document.getElementById('discord')) {
+                    document.getElementById('discord').className = "hide";
+                }
             } else {
-                document.getElementById("container").className = "container-pc";
+                document.getElementById('container').className = "container-pc";
+                if (document.getElementById('discord')) {
+                    document.getElementById('discord').height = document.getElementById('stat').offsetHeight;
+                }
             }
         };
     </script>

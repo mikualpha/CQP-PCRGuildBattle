@@ -18,7 +18,7 @@ require('functions.php');
 <body style="height: 100%">
     <?php require('style.php') ?>
     <div id="container" class="container-pc">
-        <h2 style="text-align: center; margin-bottom: 2%">留言板</h2>
+        <h2 id="page-title" class="page-title">留言板</h2>
         <?php ShowPageButtons(8, 'comments'); ?>
 		<b><?php PrintGroupRank(); ?></b>
         <table>
@@ -29,21 +29,13 @@ require('functions.php');
             </td>
             <?php if (defined('SHOW_DISCORD_CHANNEL') && SHOW_DISCORD_CHANNEL) { ?>
             <td valign="top">
-                <iframe id="discord" src="https://discord.com/widget?id=<?php echo DISCORD_ID; ?>&theme=light" width="350" min-height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+                <iframe id="discord" src="https://discord.com/widget?id=<?php echo DISCORD_ID; ?>&theme=light" width="300" min-height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
             </td>
             <?php } ?>
         </table>
         <?php echo PrintCopyRight(); ?>
     </div>
 </body>
-
-<?php if (defined('SHOW_DISCORD_CHANNEL') && SHOW_DISCORD_CHANNEL) { ?>
-<script type="text/javascript">
-    window.onload = () => {
-        document.getElementById('discord').height = document.getElementById('stat').offsetHeight;
-    }
-</script>
-<?php } ?>
 
 </html>
 

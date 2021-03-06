@@ -27,7 +27,7 @@ $day = GetDay(START_DATE);
 <body>
     <?php require('style.php') ?>
     <div id="container" class="container-pc">
-        <h2 style="text-align: center; margin-bottom: 2%">公会战伤害统计</h2>
+        <h2 id="page-title" class="page-title">公会战伤害统计</h2>
         <?php ShowPageButtons(8, 'index'); ?>
 		<b><?php PrintGroupRank(); ?></b>
         <table id="stat" class="table table-hover table-striped tablesorter" data-sort-name="Total" data-sort-order="desc">
