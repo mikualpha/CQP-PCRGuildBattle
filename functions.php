@@ -1,8 +1,14 @@
 <?php
 include 'settings.php';
+
+if (DEBUG_MODE) {
+    ini_set("display_errors","On");
+    error_reporting(E_ALL);
+}
+
 ini_set('date.timezone', "Europe/Helsinki");
 
-$SQLite = new SQLite3(DATABASE_PATH);
+$SQLite = new SQLite3(DATA_PATH . SQLITE_FILENAME);
 
 $picDir = 'img/back/';
 $user = array();
@@ -198,5 +204,27 @@ function GetDayRank($year, $month, $day, $hour, $minute, $battle_id, $start_page
 
 function PrintCopyRight() {
     echo '<div style="text-align: center; font-size: 10pt">Copyright © 2020-' . date('Y') . ' MikuAlpha All Rights Reserved.</div>';
+}
+
+function ShowPageButtons($offset, $except = '') {
+    # 暂时屏蔽过滤，看看效果
+    $except = "";
+
+    $output = "";
+    $output .= GetChar($offset) . '<div class="top-button">';
+    if ($except != 'index') $output .= PHP_EOL . GetChar($offset + 4) . '<button onclick="window.location=\'./\';" class="btn btn-dark">总视图</button>';
+    if ($except != 'today') $output .= PHP_EOL . GetChar($offset + 4) . '<button onclick="window.location=\'./today\';" class="btn btn-dark">今日伤害</button>';
+    if ($except != 'boss') $output .= PHP_EOL . GetChar($offset + 4) . '<button onclick="window.location=\'./boss\';" class="btn btn-dark">BOSS贡献</button>';
+    if ($except != 'comments') $output .= PHP_EOL . GetChar($offset + 4) . '<button onclick="window.location=\'./comments\';" class="btn btn-dark">留言板</button>';
+    $output .= '</div>';
+
+    echo $output;
+}
+
+function removeBOM($data) {
+    if (0 === strpos(bin2hex($data), 'efbbbf')) {
+        return substr($data, 3);
+    }
+    return $data;
 }
 ?>

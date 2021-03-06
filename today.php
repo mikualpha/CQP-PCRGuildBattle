@@ -32,6 +32,7 @@ $maxTroopNum = GetMaxTroopNum($day);
     <?php require('style.php') ?>
     <div id="container" class="container-pc">
         <h2 style="text-align: center; margin-bottom: 2%">公会战当日伤害统计(<?php echo date('m/d', time() + $dayOffset * 3600 * 24); ?>)</h2>
+        <?php ShowPageButtons(8, 'today'); ?>
 		<b><?php PrintGroupRank(); ?></b>
         <table id="stat" class="table table-hover table-striped tablesorter" data-sort-name="Total" data-sort-order="desc">
             <thead>

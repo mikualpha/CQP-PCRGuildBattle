@@ -40,6 +40,27 @@
         #stat {
             table-layout: fixed;
         }
+
+        .container-pc > .top-button {
+            display: block;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            right: 80px;
+        }
+
+        .container-mobile > .top-button {
+            display: block;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            right: 30px;
+        }
+
+        button {
+            size: 50%;
+            margin-left: 5px;
+        }
     </style>
 
 
