@@ -68,7 +68,11 @@ class GuildBattle
 
     public void AddBattleUser(long qq, long helper = 0)
     {
-        if (data.battleUser.Contains(qq)) return;
+        if (data.battleUser.Contains(qq))
+        {
+            ApiModel.CQApi.SendGroupMessage(group, "您目前已经在出刀列表中，请勿重复申请。");
+            return;
+        }
         data.battleUser.Add(qq);
         //发送代刀消息
         if (helper > 0) SendHelpTroopMessage(qq, helper);
@@ -107,7 +111,11 @@ class GuildBattle
 
     public void AddTreeUser(long qq)
     {
-        if (data.treeUser.Contains(qq)) return;
+        if (data.treeUser.Contains(qq))
+        {
+            ApiModel.CQApi.SendGroupMessage(group, "你已经在树上了……");
+            return;
+        }
         if (!data.battleUser.Contains(qq))
         {
             ApiModel.CQApi.SendGroupMessage(group, "设置挂树状态前请先进入战斗状态！");
