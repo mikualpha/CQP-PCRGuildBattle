@@ -3,8 +3,6 @@
 
 因CoolQ已经关闭，可采用[MiraiNative框架](https://github.com/iTXTech/mirai-native)使用本插件。
 
-Gitter聊天室：[![Gitter](https://badges.gitter.im/MikuAlphaBot/community.svg)](https://gitter.im/MikuAlphaBot/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-
 ### 使用方式
 使用前请修改```data/MiraiNative/data/cn.mikualpha.pcr.guild/Config.ini```以设置管理员，并重启。
 
